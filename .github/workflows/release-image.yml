@@ -6,7 +6,7 @@ on:
       image_tag:
         description: 'The tag name of image'
         required: true
-        default: 'docker.io/wallyxjh/spilo:14.7.2-pgvector-v0.8.0'
+        default: '14.7.2-pgvector-v0.8.0'
       pg_version:
         description: 'The version of postgres'
         required: true
