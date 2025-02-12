@@ -6,7 +6,7 @@ on:
       image_tag:
         description: 'The tag name of image'
         required: true
-        default: 'docker.io/wallykk/spilo:14.7.2-pgvector-v0.8.0'
+        default: 'docker.io/wallyxjhkk/spilo:14.7.2-pgvector-v0.8.0'
       pg_version:
         description: 'The version of postgres'
         required: true
@@ -18,7 +18,7 @@ on:
 
 env:
   RELEASE_VERSION: ${{ github.ref_name }}
-  IMAGE_NAME: "wallykk/spilo"
+  IMAGE_NAME: "wallyxjhkk/spilo"
   DOCKER_USER: ${{ secrets.DOCKER_REGISTRY_USER }}
   DOCKER_PASSWORD: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
   ALIYUN_USER: ${{ secrets.ALIYUN_REGISTRY_USER }}
