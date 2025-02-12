@@ -26,7 +26,7 @@ env:
   ALIYUN_USER_NEW: ${{ secrets.ALIYUN_USER_NEW }}
   ALIYUN_PASSWORD_NEW: ${{ secrets.ALIYUN_PASSWORD_NEW }}
 
-run-name: release image_tag:${{ inputs.image_tag }} pg_version:${{ inputs.pg_version }}
+run-name: release image_tag:${{ inputs.image_tag || github.ref_name }} pg_version:${{ inputs.pg_version }}
 
 jobs:
   image-tag:
@@ -37,7 +37,11 @@ jobs:
       - name: Determine Image Tag
         id: get_tag_name
         run: |
-          TAG_NAME=${{ inputs.image_tag }}
+          TAG_NAME="${{ inputs.image_tag || github.ref_name }}"
+          if [ -z "$TAG_NAME" ]; then
+            echo "ERROR: Image tag is empty!"
+            exit 1
+          fi
           echo "tag-name=$TAG_NAME" >> $GITHUB_OUTPUT
 
   release-image:
@@ -76,6 +80,10 @@ jobs:
         id: image
         run: |
           IMAGE="${{ matrix.registry }}/${{ env.IMAGE_NAME }}:${{ needs.image-tag.outputs.tag-name }}"
+          if [[ "$IMAGE" == *":" ]]; then
+            echo "ERROR: Image name format is incorrect: $IMAGE"
+            exit 1
+          fi
           echo "NAME=$IMAGE" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU and Docker Buildx
@@ -97,7 +105,7 @@ jobs:
           context: "postgres-appliance/"
           load: true
           tags: ${{ steps.image.outputs.NAME }}
-          build-args: PGVERSION=${{ inputs.pg_version }}
+          build-args: PGVERSION=${{ inputs.pg_version || '14.7.2' }}
 
       - name: Test Spilo Docker Image
         continue-on-error: true
@@ -114,4 +122,4 @@ jobs:
           push: true
           tags: "${{ steps.image.outputs.NAME }}"
           platforms: linux/amd64,linux/arm64
-          build-args: PGVERSION=${{ inputs.pg_version }}
+          build-args: PGVERSION=${{ inputs.pg_version || '14.7.2' }}
