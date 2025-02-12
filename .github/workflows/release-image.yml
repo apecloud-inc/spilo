@@ -75,9 +75,6 @@ jobs:
       - name: Upgrade pip and dependencies
         run: python -m pip install --upgrade pip setuptools wheel
 
-      - name: Install PyYAML using binary
-        run: python -m pip install --only-binary
-
       - name: Install flake8 and docker-compose
         run: python -m pip install flake8 docker-compose==1.17.1
 
