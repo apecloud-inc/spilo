@@ -33,112 +33,79 @@ jobs:
     outputs:
       tag-name: ${{ steps.get_tag_name.outputs.tag_name }}
     steps:
-      - name: Get Tag Name
+      - name: Determine Image Tag
         id: get_tag_name
         run: |
           TAG_NAME=${{ inputs.image_tag }}
-          #if [ -z "$TAG_NAME" ]; then
-          #    TAG_NAME=${{ env.RELEASE_VERSION }}
-          #fi
-          #TAG_NAME="${TAG_NAME/v/}"
-          echo tag_name=$TAG_NAME >> $GITHUB_OUTPUT
+          echo "tag-name=$TAG_NAME" >> $GITHUB_OUTPUT
 
   release-image:
     needs: image-tag
-    name: Push ${{ matrix.registry }}
+    name: Push to ${{ matrix.registry }}
     strategy:
       fail-fast: false
       matrix:
-        registry: [ docker.io, apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com, infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com ]
+        registry: [docker.io, apecloud-registry.cn-zhangjiakou.cr.aliyuncs.com, infracreate-registry.cn-zhangjiakou.cr.aliyuncs.com]
     runs-on: ubuntu-latest
     permissions:
-      contents: 'read'
-      packages: 'write'
+      contents: read
+      packages: write
     defaults:
       run:
         shell: bash
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set up Python and dependencies
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
 
-      - name: Install Python dependencies
-        run: python -m pip install --upgrade pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel flake8 docker-compose==1.17.1
 
-      - name: Install system dependencies
-        run: sudo apt update && sudo apt install -y build-essential python3-dev libyaml-dev
-
-      - name: Upgrade pip and dependencies
-        run: python -m pip install --upgrade pip setuptools wheel
-
-      - name: Install flake8 and docker-compose
-        run: python -m pip install flake8 docker-compose==1.17.1
-
-      - name: Derive spilo image name
+      - name: Define Spilo Image Name
         id: image
-        working-directory: postgres-appliance
         run: |
           IMAGE="${{ matrix.registry }}/${{ env.IMAGE_NAME }}:${{ needs.image-tag.outputs.tag-name }}"
           echo "NAME=$IMAGE" >> $GITHUB_OUTPUT
 
-      - name: Set up QEMU
+      - name: Set up QEMU and Docker Buildx
         uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - if: ${{ contains(matrix.registry, 'docker') }}
-        name: Login to ${{ matrix.registry }}
+      - name: Authenticate to ${{ matrix.registry }}
         uses: docker/login-action@v2
         with:
           registry: ${{ matrix.registry }}
-          username: ${{ env.DOCKER_USER }}
-          password: ${{ env.DOCKER_PASSWORD }}
+          username: ${{ contains(matrix.registry, 'docker') && env.DOCKER_USER || (contains(matrix.registry, 'infracreate') && env.ALIYUN_USER_NEW || env.ALIYUN_USER) }}
+          password: ${{ contains(matrix.registry, 'docker') && env.DOCKER_PASSWORD || (contains(matrix.registry, 'infracreate') && env.ALIYUN_PASSWORD_NEW || env.ALIYUN_PASSWORD) }}
 
-      - if: ${{ contains(matrix.registry, 'aliyuncs') && ! contains(matrix.registry, 'infracreate') }}
-        name: Login to ${{ matrix.registry }}
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ matrix.registry }}
-          username: ${{ env.ALIYUN_USER }}
-          password: ${{ env.ALIYUN_PASSWORD }}
-
-      - if: ${{ contains(matrix.registry, 'aliyuncs') && contains(matrix.registry, 'infracreate') }}
-        name: Login to ${{ matrix.registry }}
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ matrix.registry }}
-          username: ${{ env.ALIYUN_USER_NEW }}
-          password: ${{ env.ALIYUN_PASSWORD_NEW }}
-
-      - name: Build and export to local docker for testing
+      - name: Build and Load Image for Testing
         uses: docker/build-push-action@v3
         with:
           context: "postgres-appliance/"
           load: true
           tags: ${{ steps.image.outputs.NAME }}
-          build-args: |
-            PGVERSION=${{ inputs.pg_version }}
-            PGOLDVERSIONS=${{ inputs.pg_old_versions }}
+          build-args: PGVERSION=${{ inputs.pg_version }}
 
-      - name: Test spilo docker image
+      - name: Test Spilo Docker Image
         continue-on-error: true
         env:
           SPILO_TEST_IMAGE: "${{ steps.image.outputs.NAME }}"
         run: |
+          set -e
           bash postgres-appliance/tests/test_spilo.sh 
 
-      - name: Build arm64 additionally and push multi-arch image to ${{ matrix.registry }}
+      - name: Build and Push Multi-Arch Image
         uses: docker/build-push-action@v3
         with:
           context: "postgres-appliance/"
           push: true
           tags: "${{ steps.image.outputs.NAME }}"
           platforms: linux/amd64,linux/arm64
-          build-args: |
-            PGVERSION=${{ inputs.pg_version }}
-            PGOLDVERSIONS=
+          build-args: PGVERSION=${{ inputs.pg_version }}
