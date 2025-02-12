@@ -62,9 +62,14 @@ jobs:
         with:
           python-version: 3.9
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip setuptools wheel flake8 docker-compose==1.17.1
+      - name: Install system dependencies
+        run: sudo apt update && sudo apt install -y build-essential python3-dev libyaml-dev python3-pip python3-setuptools python3-wheel python3-venv
+
+      - name: Force upgrade pip, setuptools, and wheel
+        run: python -m pip install --upgrade --force-reinstall pip setuptools wheel
+
+      - name: Install PyYAML from source
+        run: pip install --no-cache-dir --no-binary pyyaml pyyaml
 
       - name: Define Spilo Image Name
         id: image
