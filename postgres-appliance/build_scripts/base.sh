@@ -200,6 +200,9 @@ if [ "$DEMO" != "true" ]; then
     for version in $DEB_PG_SUPPORTED_VERSIONS; do
         # create postgis symlinks to make it possible to perform update
         major_version=$(echo "$version" | awk -F. '{print $1}')
+        if [ -e "/usr/lib/postgresql/${major_version}/lib/postgis-2.5.so" ]; then
+            rm "/usr/lib/postgresql/${major_version}/lib/postgis-2.5.so"
+        fi
         ln -s "postgis-${POSTGIS_VERSION%.*}.so" "/usr/lib/postgresql/${major_version}/lib/postgis-2.5.so"
     done
 fi
