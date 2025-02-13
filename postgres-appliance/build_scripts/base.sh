@@ -79,7 +79,6 @@ sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/create
 for version in $DEB_PG_SUPPORTED_VERSIONS; do
     sed -i "s/ main.*$/ main $version/g" /etc/apt/sources.list.d/pgdg.list
     apt-get update
-
     if [ "$DEMO" != "true" ]; then
         EXTRAS=("postgresql-pltcl-${version}"
                 "postgresql-${version}-dirtyread"
@@ -110,16 +109,16 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
         fi
 
     fi
-
+    major_version=$(echo "$version" | awk -F. '{print $1}')
     # Install PostgreSQL binaries, contrib, plproxy and multiple pl's
     apt-get install --allow-downgrades -y \
-        "postgresql-${version}-cron" \
-        "postgresql-contrib-${version}" \
-        "postgresql-${version}-pgextwlist" \
-        "postgresql-plpython3-${version}" \
-        "postgresql-server-dev-${version}" \
-        "postgresql-${version}-pgq3" \
-        "postgresql-${version}-pg-stat-kcache" \
+        "postgresql-${major_version}-cron" \
+        "postgresql-contrib-${major_version}" \
+        "postgresql-${major_version}-pgextwlist" \
+        "postgresql-plpython3-${major_version}" \
+        "postgresql-server-dev-${major_version}" \
+        "postgresql-${major_version}-pgq3" \
+        "postgresql-${major_version}-pg-stat-kcache" \
         "${EXTRAS[@]}"
 
     # Install 3rd party stuff
