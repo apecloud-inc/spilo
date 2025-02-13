@@ -106,7 +106,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
                 "postgresql-${major_version}-pgvector")
 
         if [ "$WITH_PERL" = "true" ]; then
-            EXTRAS+=("postgresql-plperl-${version}")
+            EXTRAS+=("postgresql-plperl-${major_version}")
         fi
 
     fi
@@ -192,13 +192,15 @@ sed -i "s/ main.*$/ main/g" /etc/apt/sources.list.d/pgdg.list
 apt-get update
 apt-get install -y postgresql postgresql-server-dev-all postgresql-all libpq-dev
 for version in $DEB_PG_SUPPORTED_VERSIONS; do
-    apt-get install -y "postgresql-server-dev-${version}"
+    major_version=$(echo "$version" | awk -F. '{print $1}')
+    apt-get install -y "postgresql-server-dev-${major_version}"
 done
 
 if [ "$DEMO" != "true" ]; then
     for version in $DEB_PG_SUPPORTED_VERSIONS; do
         # create postgis symlinks to make it possible to perform update
-        ln -s "postgis-${POSTGIS_VERSION%.*}.so" "/usr/lib/postgresql/${version}/lib/postgis-2.5.so"
+        major_version=$(echo "$version" | awk -F. '{print $1}')
+        ln -s "postgis-${POSTGIS_VERSION%.*}.so" "/usr/lib/postgresql/${major_version}/lib/postgis-2.5.so"
     done
 fi
 
