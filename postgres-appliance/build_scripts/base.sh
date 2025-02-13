@@ -134,7 +134,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
                     -DTAP_CHECKS=OFF -DPG_CONFIG="/usr/lib/postgresql/$major_version/bin/pg_config" \
                     -DAPACHE_ONLY="$TIMESCALEDB_APACHE_ONLY" -DSEND_TELEMETRY_DEFAULT=NO; then
                 make -C build install
-                strip /usr/lib/postgresql/"$version"/lib/timescaledb*.so
+                strip /usr/lib/postgresql/"$major_version"/lib/timescaledb*.so
             fi
             git reset --hard
             git clean -f -d
