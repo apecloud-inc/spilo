@@ -161,10 +161,10 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
         curl -L https://packagecloud.io/timescale/timescaledb/gpgkey | gpg --dearmor > /usr/share/keyrings/timescale_E7391C94080429FF.gpg
 
         apt-get update
-        if [ "$(apt-cache search --names-only "^timescaledb-toolkit-postgresql-${version}$" | wc -l)" -eq 1 ]; then
-            apt-get install "timescaledb-toolkit-postgresql-$version"
+        if [ "$(apt-cache search --names-only "^timescaledb-toolkit-postgresql-${major_version}$" | wc -l)" -eq 1 ]; then
+            apt-get install "timescaledb-toolkit-postgresql-$major_version"
         else
-            echo "Skipping timescaledb-toolkit-postgresql-$version as it's not found in the repository"
+            echo "Skipping timescaledb-toolkit-postgresql-$major_version as it's not found in the repository"
         fi
 
         rm /etc/apt/sources.list.d/timescaledb.list
