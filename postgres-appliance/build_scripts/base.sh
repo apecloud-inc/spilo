@@ -288,6 +288,11 @@ if [ "$DEMO" != "true" ]; then
         # relink files with the same name and content across different major versions
         started=0
         for v2 in $(find /usr/share/postgresql -type d -mindepth 1 -maxdepth 1 | sort -Vr); do
+            major_version=$(echo "$PGVERSION" | awk -F. '{print $1}')
+            # relink files with the same content
+            if [[ "$v1" != "/usr/share/postgresql/$major_version" ]]; then
+                continue
+            fi
             if [ "$v1" = "$v2" ]; then
                 started=1
             elif [ $started = 1 ]; then
