@@ -79,47 +79,47 @@ sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/create
 for version in $DEB_PG_SUPPORTED_VERSIONS; do
     sed -i "s/ main.*$/ main $version/g" /etc/apt/sources.list.d/pgdg.list
     apt-get update
-
+    major_version=$(echo "$version" | awk -F. '{print $1}')
     if [ "$DEMO" != "true" ]; then
-        EXTRAS=("postgresql-pltcl-${version}"
-                "postgresql-${version}-dirtyread"
-                "postgresql-${version}-extra-window-functions"
-                "postgresql-${version}-first-last-agg"
-                "postgresql-${version}-hll"
-                "postgresql-${version}-hypopg"
-                "postgresql-${version}-plproxy"
-                "postgresql-${version}-partman"
-                "postgresql-${version}-pgaudit"
-                "postgresql-${version}-pldebugger"
-                "postgresql-${version}-pglogical"
-                "postgresql-${version}-pglogical-ticker"
-                "postgresql-${version}-plpgsql-check"
-                "postgresql-${version}-pg-checksums"
-                "postgresql-${version}-pgl-ddl-deploy"
-                "postgresql-${version}-pgq-node"
-                "postgresql-${version}-postgis-${POSTGIS_VERSION%.*}"
-                "postgresql-${version}-postgis-${POSTGIS_VERSION%.*}-scripts"
-                "postgresql-${version}-repack"
-                "postgresql-${version}-wal2json"
-                "postgresql-${version}-decoderbufs"
-                "postgresql-${version}-pllua"
-                "postgresql-${version}-pgvector")
+        EXTRAS=("postgresql-pltcl-${major_version}"
+                "postgresql-${major_version}-dirtyread"
+                "postgresql-${major_version}-extra-window-functions"
+                "postgresql-${major_version}-first-last-agg"
+                "postgresql-${major_version}-hll"
+                "postgresql-${major_version}-hypopg"
+                "postgresql-${major_version}-plproxy"
+                "postgresql-${major_version}-partman"
+                "postgresql-${major_version}-pgaudit"
+                "postgresql-${major_version}-pldebugger"
+                "postgresql-${major_version}-pglogical"
+                "postgresql-${major_version}-pglogical-ticker"
+                "postgresql-${major_version}-plpgsql-check"
+                "postgresql-${major_version}-pg-checksums"
+                "postgresql-${major_version}-pgl-ddl-deploy"
+                "postgresql-${major_version}-pgq-node"
+                "postgresql-${major_version}-postgis-${POSTGIS_VERSION%.*}"
+                "postgresql-${major_version}-postgis-${POSTGIS_VERSION%.*}-scripts"
+                "postgresql-${major_version}-repack"
+                "postgresql-${major_version}-wal2json"
+                "postgresql-${major_version}-decoderbufs"
+                "postgresql-${major_version}-pllua"
+                "postgresql-${major_version}-pgvector")
 
         if [ "$WITH_PERL" = "true" ]; then
-            EXTRAS+=("postgresql-plperl-${version}")
+            EXTRAS+=("postgresql-plperl-${major_version}")
         fi
 
     fi
-
+    major_version=$(echo "$version" | awk -F. '{print $1}')
     # Install PostgreSQL binaries, contrib, plproxy and multiple pl's
     apt-get install --allow-downgrades -y \
-        "postgresql-${version}-cron" \
-        "postgresql-contrib-${version}" \
-        "postgresql-${version}-pgextwlist" \
-        "postgresql-plpython3-${version}" \
-        "postgresql-server-dev-${version}" \
-        "postgresql-${version}-pgq3" \
-        "postgresql-${version}-pg-stat-kcache" \
+        "postgresql-${major_version}-cron" \
+        "postgresql-contrib-${major_version}" \
+        "postgresql-${major_version}-pgextwlist" \
+        "postgresql-plpython3-${major_version}" \
+        "postgresql-server-dev-${major_version}" \
+        "postgresql-${major_version}-pgq3" \
+        "postgresql-${major_version}-pg-stat-kcache" \
         "${EXTRAS[@]}"
 
     # Install 3rd party stuff
@@ -131,10 +131,10 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
             git checkout "$v"
             sed -i "s/VERSION 3.11/VERSION 3.10/" CMakeLists.txt
             if BUILD_FORCE_REMOVE=true ./bootstrap -DREGRESS_CHECKS=OFF -DWARNINGS_AS_ERRORS=OFF \
-                    -DTAP_CHECKS=OFF -DPG_CONFIG="/usr/lib/postgresql/$version/bin/pg_config" \
+                    -DTAP_CHECKS=OFF -DPG_CONFIG="/usr/lib/postgresql/$major_version/bin/pg_config" \
                     -DAPACHE_ONLY="$TIMESCALEDB_APACHE_ONLY" -DSEND_TELEMETRY_DEFAULT=NO; then
                 make -C build install
-                strip /usr/lib/postgresql/"$version"/lib/timescaledb*.so
+                strip /usr/lib/postgresql/"$major_version"/lib/timescaledb*.so
             fi
             git reset --hard
             git clean -f -d
@@ -146,7 +146,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
         cd pgvector
         for v in $PGVECTOR; do
             git checkout "$v"
-            export PG_CONFIG="/usr/lib/postgresql/$version/bin/pg_config"
+            export PG_CONFIG="/usr/lib/postgresql/$major_version/bin/pg_config"
             # fix Illegal instruction, https://github.com/pgvector/pgvector/issues/54#issuecomment-1562071614
             # overwrite OPTFLAGS to remove -march=native
             make OPTFLAGS="" && make install
@@ -161,10 +161,10 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
         curl -L https://packagecloud.io/timescale/timescaledb/gpgkey | gpg --dearmor > /usr/share/keyrings/timescale_E7391C94080429FF.gpg
 
         apt-get update
-        if [ "$(apt-cache search --names-only "^timescaledb-toolkit-postgresql-${version}$" | wc -l)" -eq 1 ]; then
-            apt-get install "timescaledb-toolkit-postgresql-$version"
+        if [ "$(apt-cache search --names-only "^timescaledb-toolkit-postgresql-${major_version}$" | wc -l)" -eq 1 ]; then
+            apt-get install "timescaledb-toolkit-postgresql-$major_version"
         else
-            echo "Skipping timescaledb-toolkit-postgresql-$version as it's not found in the repository"
+            echo "Skipping timescaledb-toolkit-postgresql-$major_version as it's not found in the repository"
         fi
 
         rm /etc/apt/sources.list.d/timescaledb.list
@@ -192,13 +192,18 @@ sed -i "s/ main.*$/ main/g" /etc/apt/sources.list.d/pgdg.list
 apt-get update
 apt-get install -y postgresql postgresql-server-dev-all postgresql-all libpq-dev
 for version in $DEB_PG_SUPPORTED_VERSIONS; do
-    apt-get install -y "postgresql-server-dev-${version}"
+    major_version=$(echo "$version" | awk -F. '{print $1}')
+    apt-get install -y "postgresql-server-dev-${major_version}"
 done
 
 if [ "$DEMO" != "true" ]; then
     for version in $DEB_PG_SUPPORTED_VERSIONS; do
         # create postgis symlinks to make it possible to perform update
-        ln -s "postgis-${POSTGIS_VERSION%.*}.so" "/usr/lib/postgresql/${version}/lib/postgis-2.5.so"
+        major_version=$(echo "$version" | awk -F. '{print $1}')
+        if [ -e "/usr/lib/postgresql/${major_version}/lib/postgis-2.5.so" ]; then
+            rm "/usr/lib/postgresql/${major_version}/lib/postgis-2.5.so"
+        fi
+        ln -s "postgis-${POSTGIS_VERSION%.*}.so" "/usr/lib/postgresql/${major_version}/lib/postgis-2.5.so"
     done
 fi
 
@@ -229,7 +234,8 @@ dpkg -l | grep '^rc' | awk '{print $2}' | xargs apt-get purge -y
 
 # Try to minimize size by creating symlinks instead of duplicate files
 if [ "$DEMO" != "true" ]; then
-    cd "/usr/lib/postgresql/$PGVERSION/bin"
+    major_version=$(echo "$PGVERSION" | awk -F. '{print $1}')
+    cd "/usr/lib/postgresql/$major_version/bin"
     for u in clusterdb \
             pg_archivecleanup \
             pg_basebackup \
@@ -241,9 +247,9 @@ if [ "$DEMO" != "true" ]; then
             reindexdb \
             vacuumlo *.py; do
         for v in /usr/lib/postgresql/*; do
-            if [ "$v" != "/usr/lib/postgresql/$PGVERSION" ] && [ -f "$v/bin/$u" ]; then
+            if [ "$v" != "/usr/lib/postgresql/$major_version" ] && [ -f "$v/bin/$u" ]; then
                 rm "$v/bin/$u"
-                ln -s "../../$PGVERSION/bin/$u" "$v/bin/$u"
+                ln -s "../../$major_version/bin/$u" "$v/bin/$u"
             fi
         done
     done
@@ -251,7 +257,12 @@ if [ "$DEMO" != "true" ]; then
     set +x
 
     for v1 in $(find /usr/share/postgresql -type d -mindepth 1 -maxdepth 1 | sort -Vr); do
+        major_version=$(echo "$PGVERSION" | awk -F. '{print $1}')
         # relink files with the same content
+        if [[ "$v1" != "/usr/share/postgresql/$major_version" ]]; then
+                continue
+        fi
+
         cd "$v1/extension"
         while IFS= read -r -d '' orig
         do
@@ -274,14 +285,21 @@ if [ "$DEMO" != "true" ]; then
                 done
             fi
         done
-
         # relink files with the same name and content across different major versions
         started=0
         for v2 in $(find /usr/share/postgresql -type d -mindepth 1 -maxdepth 1 | sort -Vr); do
+            major_version=$(echo "$PGVERSION" | awk -F. '{print $1}')
+            # relink files with the same content
+            if [[ "$v2" != "/usr/share/postgresql/$major_version" ]]; then
+                continue
+            fi
             if [ "$v1" = "$v2" ]; then
                 started=1
             elif [ $started = 1 ]; then
                 for d1 in extension contrib contrib/postgis-$POSTGIS_VERSION; do
+                    if [[ "$d1" != "/usr/share/postgresql/$major_version" ]]; then
+                      continue
+                    fi
                     cd "$v1/$d1"
                     d2="$d1"
                     d1="../../${v1##*/}/$d1"

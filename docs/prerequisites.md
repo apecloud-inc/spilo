@@ -6,6 +6,7 @@ see the [Stups Installation Guide](http://docs.stups.io/en/latest/installation/)
 
 To be able to deploy and troubleshoot Spilo, you need the stups tooling installed locally:
 ```bash
+$ sudo pip3 install --upgrade pip
 $ sudo pip3 install --upgrade stups
 ```
 
