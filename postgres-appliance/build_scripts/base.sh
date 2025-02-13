@@ -290,15 +290,15 @@ if [ "$DEMO" != "true" ]; then
         for v2 in $(find /usr/share/postgresql -type d -mindepth 1 -maxdepth 1 | sort -Vr); do
             major_version=$(echo "$PGVERSION" | awk -F. '{print $1}')
             # relink files with the same content
-            if [[ "$v1" != "/usr/share/postgresql/$major_version" ]]; then
+            if [[ "$v2" != "/usr/share/postgresql/$major_version" ]]; then
                 continue
             fi
             if [ "$v1" = "$v2" ]; then
                 started=1
             elif [ $started = 1 ]; then
                 for d1 in extension contrib contrib/postgis-$POSTGIS_VERSION; do
-                    if [[ "$v1" != "/usr/share/postgresql/$major_version" ]]; then
-                                  continue
+                    if [[ "$d1" != "/usr/share/postgresql/$major_version" ]]; then
+                      continue
                     fi
                     cd "$v1/$d1"
                     d2="$d1"
