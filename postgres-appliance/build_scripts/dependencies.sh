@@ -15,21 +15,21 @@ find /builddeps -type f ! -name "*_${ARCH}.deb" -delete
 
 echo -e 'APT::Install-Recommends "0";\nAPT::Install-Suggests "0";' | tee /etc/apt/apt.conf.d/01norecommend
 
+# 等待 dpkg 锁释放
 while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
     echo "Waiting for dpkg lock..."
     sleep 2
 done
 
+# 修复 dpkg
 dpkg --configure -a || true
 /sbin/ldconfig || true
 
-for i in {1..3}; do
-    apt-get update && break || sleep 5
-done
+# 强制更新 APT 并安装 curl
+apt-get update
+apt-get install -y --no-install-recommends curl ca-certificates
 
-apt-get install -y --no-install-recommends curl ca-certificates libc-bin || true
-dpkg --force-all --configure -a || true
-/sbin/ldconfig || true
+which curl || { echo "Error: curl not found!"; exit 1; }
 
 mkdir -p /builddeps/wal-g
 
@@ -39,6 +39,18 @@ else
     PKG_NAME='wal-g-pg-ubuntu20.04-aarch64'
 fi
 
-curl -sL "https://github.com/wal-g/wal-g/releases/download/$WALG_VERSION/$PKG_NAME.tar.gz" \
-    | tar -C /builddeps/wal-g -xz
+# 自动重试下载
+RETRY=5
+until [ "$RETRY" -le 0 ]; do
+    curl -sL "https://github.com/wal-g/wal-g/releases/download/$WALG_VERSION/$PKG_NAME.tar.gz" | tar -C /builddeps/wal-g -xz && break
+    echo "Download failed, retrying in 5 seconds..."
+    sleep 5
+    RETRY=$((RETRY - 1))
+done
+
+if [ "$RETRY" -le 0 ]; then
+    echo "Failed to download WAL-G after multiple attempts."
+    exit 1
+fi
+
 mv "/builddeps/wal-g/$PKG_NAME" /builddeps/wal-g/wal-g
