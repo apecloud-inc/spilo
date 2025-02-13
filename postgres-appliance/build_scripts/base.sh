@@ -79,30 +79,31 @@ sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/create
 for version in $DEB_PG_SUPPORTED_VERSIONS; do
     sed -i "s/ main.*$/ main $version/g" /etc/apt/sources.list.d/pgdg.list
     apt-get update
+    major_version=$(echo "$version" | awk -F. '{print $1}')
     if [ "$DEMO" != "true" ]; then
-        EXTRAS=("postgresql-pltcl-${version}"
-                "postgresql-${version}-dirtyread"
-                "postgresql-${version}-extra-window-functions"
-                "postgresql-${version}-first-last-agg"
-                "postgresql-${version}-hll"
-                "postgresql-${version}-hypopg"
-                "postgresql-${version}-plproxy"
-                "postgresql-${version}-partman"
-                "postgresql-${version}-pgaudit"
-                "postgresql-${version}-pldebugger"
-                "postgresql-${version}-pglogical"
-                "postgresql-${version}-pglogical-ticker"
-                "postgresql-${version}-plpgsql-check"
-                "postgresql-${version}-pg-checksums"
-                "postgresql-${version}-pgl-ddl-deploy"
-                "postgresql-${version}-pgq-node"
-                "postgresql-${version}-postgis-${POSTGIS_VERSION%.*}"
-                "postgresql-${version}-postgis-${POSTGIS_VERSION%.*}-scripts"
-                "postgresql-${version}-repack"
-                "postgresql-${version}-wal2json"
-                "postgresql-${version}-decoderbufs"
-                "postgresql-${version}-pllua"
-                "postgresql-${version}-pgvector")
+        EXTRAS=("postgresql-pltcl-${major_version}"
+                "postgresql-${major_version}-dirtyread"
+                "postgresql-${major_version}-extra-window-functions"
+                "postgresql-${major_version}-first-last-agg"
+                "postgresql-${major_version}-hll"
+                "postgresql-${major_version}-hypopg"
+                "postgresql-${major_version}-plproxy"
+                "postgresql-${major_version}-partman"
+                "postgresql-${major_version}-pgaudit"
+                "postgresql-${major_version}-pldebugger"
+                "postgresql-${major_version}-pglogical"
+                "postgresql-${major_version}-pglogical-ticker"
+                "postgresql-${major_version}-plpgsql-check"
+                "postgresql-${major_version}-pg-checksums"
+                "postgresql-${major_version}-pgl-ddl-deploy"
+                "postgresql-${major_version}-pgq-node"
+                "postgresql-${major_version}-postgis-${POSTGIS_VERSION%.*}"
+                "postgresql-${major_version}-postgis-${POSTGIS_VERSION%.*}-scripts"
+                "postgresql-${major_version}-repack"
+                "postgresql-${major_version}-wal2json"
+                "postgresql-${major_version}-decoderbufs"
+                "postgresql-${major_version}-pllua"
+                "postgresql-${major_version}-pgvector")
 
         if [ "$WITH_PERL" = "true" ]; then
             EXTRAS+=("postgresql-plperl-${version}")
