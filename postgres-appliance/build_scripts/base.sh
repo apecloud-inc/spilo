@@ -257,7 +257,12 @@ if [ "$DEMO" != "true" ]; then
     set +x
 
     for v1 in $(find /usr/share/postgresql -type d -mindepth 1 -maxdepth 1 | sort -Vr); do
+        major_version=$(echo "$PGVERSION" | awk -F. '{print $1}')
         # relink files with the same content
+        if [[ "$v1" != "/usr/share/postgresql/$major_version" ]]; then
+                continue
+        fi
+
         cd "$v1/extension"
         while IFS= read -r -d '' orig
         do
