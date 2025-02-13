@@ -6,27 +6,33 @@
 
 set -ex
 
-# should exist when $DEMO=TRUE to avoid 'COPY --from=dependencies-builder /builddeps/wal-g ...' failure
-
 if [ "$DEMO" = "true" ]; then
-    mkdir /builddeps/wal-g
+    mkdir -p /builddeps/wal-g
     exit 0
 fi
 
 export DEBIAN_FRONTEND=noninteractive
-MAKEFLAGS="-j $(grep -c ^processor /proc/cpuinfo)"
-export MAKEFLAGS
+export MAKEFLAGS="-j$(nproc)"
 ARCH="$(dpkg --print-architecture)"
 
-# We want to remove all libgdal30 debs except one that is for current architecture.
-printf "shopt -s extglob\nrm /builddeps/!(*_%s.deb)" "$ARCH" | bash -s
+find /builddeps -type f ! -name "*_${ARCH}.deb" -delete
 
-echo -e 'APT::Install-Recommends "0";\nAPT::Install-Suggests "0";' > /etc/apt/apt.conf.d/01norecommend
+echo -e 'APT::Install-Recommends "0";\nAPT::Install-Suggests "0";' | tee /etc/apt/apt.conf.d/01norecommend
 
-apt-get update
-apt-get install -y curl ca-certificates
+while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do
+    echo "Waiting for dpkg lock to be released..."
+    sleep 2
+done
 
-mkdir /builddeps/wal-g
+dpkg --configure -a || true
+
+for i in {1..3}; do
+    apt-get update && break || sleep 5
+done
+
+apt-get install -y curl ca-certificates || (apt-get -f install -y && apt-get install -y curl ca-certificates)
+
+mkdir -p /builddeps/wal-g
 
 if [ "$ARCH" = "amd64" ]; then
     PKG_NAME='wal-g-pg-ubuntu-20.04-amd64'
@@ -35,5 +41,5 @@ else
 fi
 
 curl -sL "https://github.com/wal-g/wal-g/releases/download/$WALG_VERSION/$PKG_NAME.tar.gz" \
-            | tar -C /builddeps/wal-g -xz
+    | tar -C /builddeps/wal-g -xz
 mv "/builddeps/wal-g/$PKG_NAME" /builddeps/wal-g/wal-g
