@@ -131,7 +131,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
             git checkout "$v"
             sed -i "s/VERSION 3.11/VERSION 3.10/" CMakeLists.txt
             if BUILD_FORCE_REMOVE=true ./bootstrap -DREGRESS_CHECKS=OFF -DWARNINGS_AS_ERRORS=OFF \
-                    -DTAP_CHECKS=OFF -DPG_CONFIG="/usr/lib/postgresql/$version/bin/pg_config" \
+                    -DTAP_CHECKS=OFF -DPG_CONFIG="/usr/lib/postgresql/$major_version/bin/pg_config" \
                     -DAPACHE_ONLY="$TIMESCALEDB_APACHE_ONLY" -DSEND_TELEMETRY_DEFAULT=NO; then
                 make -C build install
                 strip /usr/lib/postgresql/"$version"/lib/timescaledb*.so
@@ -146,7 +146,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
         cd pgvector
         for v in $PGVECTOR; do
             git checkout "$v"
-            export PG_CONFIG="/usr/lib/postgresql/$version/bin/pg_config"
+            export PG_CONFIG="/usr/lib/postgresql/$major_version/bin/pg_config"
             # fix Illegal instruction, https://github.com/pgvector/pgvector/issues/54#issuecomment-1562071614
             # overwrite OPTFLAGS to remove -march=native
             make OPTFLAGS="" && make install
