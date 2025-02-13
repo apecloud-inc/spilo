@@ -297,6 +297,9 @@ if [ "$DEMO" != "true" ]; then
                 started=1
             elif [ $started = 1 ]; then
                 for d1 in extension contrib contrib/postgis-$POSTGIS_VERSION; do
+                    if [[ "$v1" != "/usr/share/postgresql/$major_version" ]]; then
+                                  continue
+                    fi
                     cd "$v1/$d1"
                     d2="$d1"
                     d1="../../${v1##*/}/$d1"
