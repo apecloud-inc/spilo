@@ -234,7 +234,8 @@ dpkg -l | grep '^rc' | awk '{print $2}' | xargs apt-get purge -y
 
 # Try to minimize size by creating symlinks instead of duplicate files
 if [ "$DEMO" != "true" ]; then
-    cd "/usr/lib/postgresql/$PGVERSION/bin"
+    major_version=$(echo "$PGVERSION" | awk -F. '{print $1}')
+    cd "/usr/lib/postgresql/$major_version/bin"
     for u in clusterdb \
             pg_archivecleanup \
             pg_basebackup \
@@ -246,9 +247,9 @@ if [ "$DEMO" != "true" ]; then
             reindexdb \
             vacuumlo *.py; do
         for v in /usr/lib/postgresql/*; do
-            if [ "$v" != "/usr/lib/postgresql/$PGVERSION" ] && [ -f "$v/bin/$u" ]; then
+            if [ "$v" != "/usr/lib/postgresql/$major_version" ] && [ -f "$v/bin/$u" ]; then
                 rm "$v/bin/$u"
-                ln -s "../../$PGVERSION/bin/$u" "$v/bin/$u"
+                ln -s "../../$major_version/bin/$u" "$v/bin/$u"
             fi
         done
     done
@@ -279,7 +280,6 @@ if [ "$DEMO" != "true" ]; then
                 done
             fi
         done
-
         # relink files with the same name and content across different major versions
         started=0
         for v2 in $(find /usr/share/postgresql -type d -mindepth 1 -maxdepth 1 | sort -Vr); do
