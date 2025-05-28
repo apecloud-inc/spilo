@@ -111,11 +111,6 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
         EXTRAS+=("timescaledb-2-postgresql-${version}")
     fi
 
-    # NOTE(KubeBlocks): Prepare pg_duckdb package for PostgreSQL 14+
-    if [ "$version" -ge 14 ] ; then
-        EXTRAS+=("postgresql-${version}-pg-duckdb")
-    fi
-
     # Install PostgreSQL binaries, contrib, plproxy and multiple pl's
     apt-get install --allow-downgrades -y \
         "postgresql-${version}-cron" \
