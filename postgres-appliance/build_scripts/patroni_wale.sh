@@ -12,17 +12,20 @@ BUILD_PACKAGES=(python3-pip python3-wheel python3-dev git patchutils binutils gc
 
 apt-get update
 
+# Fix any broken dependencies first
+apt-get install -y --fix-broken
+
 # install most of the patroni dependencies from ubuntu packages
 apt-cache depends patroni \
         | sed -n -e 's/.* Depends: \(python3-.\+\)$/\1/p' \
         | grep -Ev '^python3-(sphinx|etcd|consul|kazoo|kubernetes)' \
-        | xargs apt-get install -y "${BUILD_PACKAGES[@]}" python3-pystache python3-requests
+        | xargs apt-get install -y --allow-downgrades "${BUILD_PACKAGES[@]}" python3-pystache python3-requests
 
 pip3 install setuptools
 
 if [ "$DEMO" != "true" ]; then
     EXTRAS=",etcd,consul,zookeeper,aws"
-    apt-get install -y \
+    apt-get install -y --allow-downgrades \
         python3-etcd \
         python3-consul \
         python3-kazoo \
