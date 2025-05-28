@@ -13,7 +13,7 @@ sed -i 's/^#\s*\(deb.*universe\)$/\1/g' /etc/apt/sources.list
 
 apt-get update
 
-BUILD_PACKAGES=(devscripts equivs build-essential fakeroot debhelper git gcc libc6-dev make cmake libevent-dev libbrotli-dev libssl-dev libkrb5-dev)
+BUILD_PACKAGES=(devscripts equivs build-essential fakeroot debhelper git gcc g++ libc6-dev make cmake ninja-build libevent-dev libbrotli-dev libssl-dev libkrb5-dev)
 if [ "$DEMO" = "true" ]; then
     export DEB_PG_SUPPORTED_VERSIONS="$PGVERSION"
     WITH_PERL=false
@@ -27,7 +27,8 @@ else
                     libicu-dev
                     libc-ares-dev
                     pandoc
-                    pkg-config)
+                    pkg-config
+                    liblz4-dev)
     apt-get install -y "${BUILD_PACKAGES[@]}" libcurl4
 
     # install pam_oauth2.so
@@ -110,6 +111,11 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
         EXTRAS+=("timescaledb-2-postgresql-${version}")
     fi
 
+    # NOTE(KubeBlocks): Prepare pg_duckdb package for PostgreSQL 14+
+    if [ "$version" -ge 14 ] ; then
+        EXTRAS+=("postgresql-${version}-pg-duckdb")
+    fi
+
     # Install PostgreSQL binaries, contrib, plproxy and multiple pl's
     apt-get install --allow-downgrades -y \
         "postgresql-${version}-cron" \
@@ -157,6 +163,21 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
             "${EXTRA_EXTENSIONS[@]}"; do
         make -C "$n" USE_PGXS=1 clean install-strip
     done
+
+    # NOTE(KubeBlocks): Install pg_duckdb extension for PostgreSQL 14+
+    if [ "$version" -ge 14 ] && [ "${PG_DUCKDB_VERSION:-}" != "" ]; then
+        echo "Installing pg_duckdb extension for PostgreSQL $version"
+        # Clone and build pg_duckdb
+        git clone --recurse-submodules https://github.com/duckdb/pg_duckdb.git
+        cd pg_duckdb
+        git checkout "${PG_DUCKDB_VERSION}"
+        # Build and install
+        make USE_PGXS=1 PG_CONFIG="/usr/lib/postgresql/$version/bin/pg_config"
+        make USE_PGXS=1 PG_CONFIG="/usr/lib/postgresql/$version/bin/pg_config" install
+        cd ..
+        rm -rf pg_duckdb
+        echo "pg_duckdb extension installed successfully for PostgreSQL $version"
+    fi
 done
 
 apt-get install -y skytools3-ticker pgbouncer
