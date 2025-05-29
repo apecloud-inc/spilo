@@ -6,9 +6,51 @@
 
 set -ex
 
+# Configure Aliyun mirrors for better access in China
+if [ -f /etc/apt/sources.list ]; then
+    cp /etc/apt/sources.list /etc/apt/sources.list.backup
+    cat > /etc/apt/sources.list << 'EOF'
+# Aliyun Ubuntu mirrors for better access in China
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ bionic main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ bionic-updates main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ bionic-security main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ bionic-backports main restricted universe multiverse
+
+# Fallback to original sources
+deb http://archive.ubuntu.com/ubuntu/ bionic main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ bionic-updates main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu/ bionic-security main restricted universe multiverse
+EOF
+fi
+
+# Add retry mechanism for apt operations
+retry_apt_install() {
+    local max_attempts=3
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        echo "Attempt $attempt of $max_attempts..."
+        if apt-get install -y --fix-missing "$@"; then
+            echo "Installation successful on attempt $attempt"
+            return 0
+        else
+            echo "Installation failed on attempt $attempt"
+            if [ $attempt -lt $max_attempts ]; then
+                echo "Retrying in 10 seconds..."
+                sleep 10
+                apt-get update
+            fi
+            attempt=$((attempt + 1))
+        fi
+    done
+
+    echo "All attempts failed, trying with --fix-broken"
+    apt-get install -y --fix-broken --fix-missing "$@"
+}
+
 apt-get update
 apt-get -y upgrade
-apt-get install -y locales
+retry_apt_install locales
 
 # Cleanup all locales but en_US.UTF-8 and optionally specified in ADDITIONAL_LOCALES arg
 find /usr/share/i18n/charmaps/ -type f ! -name UTF-8.gz -delete
