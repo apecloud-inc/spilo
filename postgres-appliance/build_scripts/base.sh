@@ -51,7 +51,7 @@ retry_apt_install() {
     apt-get install -y --fix-broken --fix-missing "$@"
 }
 
-BUILD_PACKAGES=(devscripts equivs build-essential fakeroot debhelper git gcc libc6-dev make cmake libevent-dev libbrotli-dev libssl-dev libkrb5-dev)
+BUILD_PACKAGES=(devscripts equivs build-essential fakeroot debhelper git gcc g++ libc6-dev make cmake ninja-build libevent-dev libbrotli-dev libssl-dev libkrb5-dev)
 if [ "$DEMO" = "true" ]; then
     export DEB_PG_SUPPORTED_VERSIONS="$PGVERSION"
     WITH_PERL=false
@@ -64,6 +64,7 @@ else
                     libcurl4-openssl-dev
                     libicu-dev
                     libc-ares-dev
+                    liblz4-dev
                     pandoc
                     pkg-config)
     retry_apt_install "${BUILD_PACKAGES[@]}" libcurl4
@@ -196,19 +197,22 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
         make -C "$n" USE_PGXS=1 clean install-strip
     done
 
-    # NOTE(KubeBlocks): Install pg_duckdb extension for PostgreSQL 14+ using pgxman
-    if [ "$version" -ge 14 ]; then
-        echo "Installing pg_duckdb extension for PostgreSQL $version using pgxman"
+    # NOTE(KubeBlocks): Install pg_duckdb extension for PostgreSQL 14+ via source compilation
+    if [ "$version" -ge 14 ] && [ "${PG_DUCKDB_VERSION:-}" != "" ]; then
+        echo "Installing pg_duckdb extension for PostgreSQL $version via source compilation"
 
-        # Install pgxman if not already installed
-        if ! command -v pgxman >/dev/null 2>&1; then
-            echo "Installing pgxman..."
-            curl -sfL https://install.pgx.sh | sh -
-            export PATH="$HOME/.local/bin:$PATH"
-        fi
+        # Clone and build pg_duckdb
+        git clone --recurse-submodules https://github.com/duckdb/pg_duckdb.git /tmp/pg_duckdb
+        cd /tmp/pg_duckdb
+        git checkout "${PG_DUCKDB_VERSION}"
 
-        # Install pg_duckdb using pgxman
-        pgxman install pg_duckdb --pg "$version"
+        # Build and install
+        make USE_PGXS=1 PG_CONFIG="/usr/lib/postgresql/$version/bin/pg_config"
+        make USE_PGXS=1 PG_CONFIG="/usr/lib/postgresql/$version/bin/pg_config" install
+
+        # Clean up
+        cd /
+        rm -rf /tmp/pg_duckdb
 
         echo "pg_duckdb extension installed successfully for PostgreSQL $version"
     fi
