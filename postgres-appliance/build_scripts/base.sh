@@ -211,7 +211,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
         make USE_PGXS=1 PG_CONFIG="/usr/lib/postgresql/$version/bin/pg_config" install
 
         # Clean up
-        cd /
+        cd /builddeps
         rm -rf /tmp/pg_duckdb
 
         echo "pg_duckdb extension installed successfully for PostgreSQL $version"
