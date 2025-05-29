@@ -4,6 +4,24 @@ export DEBIAN_FRONTEND=noninteractive
 
 echo -e 'APT::Install-Recommends "0";\nAPT::Install-Suggests "0";' > /etc/apt/apt.conf.d/01norecommend
 
+# Add backup mirror sources for better reliability (using Aliyun mirrors for better access in China)
+if [ -f /etc/apt/sources.list ]; then
+    cp /etc/apt/sources.list /etc/apt/sources.list.backup
+    # Replace with Aliyun mirrors for better reliability in China
+    cat > /etc/apt/sources.list << 'EOF'
+# Aliyun Ubuntu mirrors for better access in China
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-security main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-backports main restricted universe multiverse
+
+# Fallback to original sources
+deb http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
+EOF
+fi
+
 apt-get update
 apt-get -y upgrade
 apt-get install -y curl ca-certificates less locales jq vim-tiny gnupg1 cron runit dumb-init libcap2-bin rsync sysstat gpg
@@ -53,24 +71,6 @@ tee /etc/apt/sources.list.d/pigsty-io.list > /dev/null <<EOF
 deb [signed-by=/etc/apt/keyrings/pigsty.gpg] https://repo.pigsty.cc/apt/infra generic main
 deb [signed-by=/etc/apt/keyrings/pigsty.gpg] https://repo.pigsty.cc/apt/pgsql/${distro_codename} ${distro_codename} main
 EOF
-
-# Add backup mirror sources for better reliability (using Aliyun mirrors for better access in China)
-if [ -f /etc/apt/sources.list ]; then
-    cp /etc/apt/sources.list /etc/apt/sources.list.backup
-    # Replace with Aliyun mirrors for better reliability in China
-    cat > /etc/apt/sources.list << 'EOF'
-# Aliyun Ubuntu mirrors for better access in China
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-updates main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-security main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-backports main restricted universe multiverse
-
-# Fallback to original sources
-deb http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse
-deb http://security.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
-EOF
-fi
 
 # Clean up
 apt-get purge -y libcap2-bin
