@@ -65,8 +65,9 @@ curl -fsSL https://packagecloud.io/timescale/timescaledb/gpgkey | gpg --dearmor 
 # NOTE(KubeBlocks): Add Pigsty's GPG public key to your system keychain to verify package signatures
 # https://pigsty.io/ext/repo/apt/
 curl -fsSL https://repo.pigsty.cc/key | gpg --dearmor -o /etc/apt/keyrings/pigsty.gpg
-# Get Debian distribution codename (distro_codename=jammy, focal, bullseye, bookworm), and write the corresponding upstream repository address to the APT List file
-distro_codename=$(lsb_release -cs)
+# Get Debian distribution codename - try multiple methods
+distro_codename=$(lsb_release -cs 2>/dev/null || grep VERSION_CODENAME /etc/os-release | cut -d= -f2 | tr -d '"' || echo "jammy")
+echo "Detected distribution codename: $distro_codename"
 tee /etc/apt/sources.list.d/pigsty-io.list > /dev/null <<EOF
 deb [signed-by=/etc/apt/keyrings/pigsty.gpg] https://repo.pigsty.cc/apt/infra generic main
 deb [signed-by=/etc/apt/keyrings/pigsty.gpg] https://repo.pigsty.cc/apt/pgsql/${distro_codename} ${distro_codename} main
