@@ -11,14 +11,52 @@ export MAKEFLAGS
 set -ex
 sed -i 's/^#\s*\(deb.*universe\)$/\1/g' /etc/apt/sources.list
 
+# Add backup mirror sources for better reliability
+if [ -f /etc/apt/sources.list ]; then
+    cp /etc/apt/sources.list /etc/apt/sources.list.backup
+    # Add additional mirrors for better reliability
+    cat >> /etc/apt/sources.list << 'EOF'
+
+# Additional mirrors for reliability
+deb http://mirrors.kernel.org/ubuntu/ jammy main restricted universe multiverse
+deb http://mirrors.kernel.org/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://mirrors.kernel.org/ubuntu/ jammy-security main restricted universe multiverse
+EOF
+fi
+
 apt-get update
+
+# Add retry mechanism for apt operations
+retry_apt_install() {
+    local max_attempts=3
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        echo "Attempt $attempt of $max_attempts..."
+        if apt-get install -y --fix-missing "$@"; then
+            echo "Installation successful on attempt $attempt"
+            return 0
+        else
+            echo "Installation failed on attempt $attempt"
+            if [ $attempt -lt $max_attempts ]; then
+                echo "Retrying in 10 seconds..."
+                sleep 10
+                apt-get update
+            fi
+            attempt=$((attempt + 1))
+        fi
+    done
+
+    echo "All attempts failed, trying with --fix-broken"
+    apt-get install -y --fix-broken --fix-missing "$@"
+}
 
 BUILD_PACKAGES=(devscripts equivs build-essential fakeroot debhelper git gcc libc6-dev make cmake libevent-dev libbrotli-dev libssl-dev libkrb5-dev)
 if [ "$DEMO" = "true" ]; then
     export DEB_PG_SUPPORTED_VERSIONS="$PGVERSION"
     WITH_PERL=false
     rm -f ./*.deb
-    apt-get install -y "${BUILD_PACKAGES[@]}"
+    retry_apt_install "${BUILD_PACKAGES[@]}"
 else
     BUILD_PACKAGES+=(zlib1g-dev
                     libprotobuf-c-dev
@@ -28,7 +66,7 @@ else
                     libc-ares-dev
                     pandoc
                     pkg-config)
-    apt-get install -y "${BUILD_PACKAGES[@]}" libcurl4
+    retry_apt_install "${BUILD_PACKAGES[@]}" libcurl4
 
     # install pam_oauth2.so
     git clone -b "$PAM_OAUTH2" --recurse-submodules https://github.com/zalando-pg/pam-oauth2.git
@@ -57,7 +95,7 @@ curl -sL "https://github.com/cybertec-postgresql/pg_permissions/archive/$PG_PERM
 curl -sL "https://github.com/zubkov-andrei/pg_profile/archive/$PG_PROFILE.tar.gz" | tar xz
 git clone -b "$SET_USER" https://github.com/pgaudit/set_user.git
 
-apt-get install -y \
+retry_apt_install \
     postgresql-common \
     libevent-2.1 \
     libevent-pthreads-2.1 \
@@ -111,7 +149,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
     fi
 
     # Install PostgreSQL binaries, contrib, plproxy and multiple pl's
-    apt-get install --allow-downgrades -y \
+    retry_apt_install --allow-downgrades -y \
         "postgresql-${version}-cron" \
         "postgresql-contrib-${version}" \
         "postgresql-${version}-pgextwlist" \
@@ -138,7 +176,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
     if [ "${TIMESCALEDB_APACHE_ONLY}" != "true" ] && [ "${TIMESCALEDB_TOOLKIT}" = "true" ]; then
         apt-get update
         if [ "$(apt-cache search --names-only "^timescaledb-toolkit-postgresql-${version}$" | wc -l)" -eq 1 ]; then
-            apt-get install "timescaledb-toolkit-postgresql-$version"
+            retry_apt_install "timescaledb-toolkit-postgresql-$version"
         else
             echo "Skipping timescaledb-toolkit-postgresql-$version as it's not found in the repository"
         fi
@@ -176,13 +214,13 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
     fi
 done
 
-apt-get install -y skytools3-ticker pgbouncer
+retry_apt_install skytools3-ticker pgbouncer
 
 sed -i "s/ main.*$/ main/g" /etc/apt/sources.list.d/pgdg.list
 apt-get update
-apt-get install -y postgresql postgresql-server-dev-all postgresql-all libpq-dev
+retry_apt_install postgresql postgresql-server-dev-all postgresql-all libpq-dev
 for version in $DEB_PG_SUPPORTED_VERSIONS; do
-    apt-get install -y "postgresql-server-dev-${version}"
+    retry_apt_install "postgresql-server-dev-${version}"
 done
 
 if [ "$DEMO" != "true" ]; then
