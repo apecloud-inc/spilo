@@ -11,19 +11,6 @@ export MAKEFLAGS
 set -ex
 sed -i 's/^#\s*\(deb.*universe\)$/\1/g' /etc/apt/sources.list
 
-# Add backup mirror sources for better reliability
-if [ -f /etc/apt/sources.list ]; then
-    cp /etc/apt/sources.list /etc/apt/sources.list.backup
-    # Add additional mirrors for better reliability
-    cat >> /etc/apt/sources.list << 'EOF'
-
-# Additional mirrors for reliability
-deb http://mirrors.kernel.org/ubuntu/ jammy main restricted universe multiverse
-deb http://mirrors.kernel.org/ubuntu/ jammy-updates main restricted universe multiverse
-deb http://mirrors.kernel.org/ubuntu/ jammy-security main restricted universe multiverse
-EOF
-fi
-
 apt-get update
 
 # Add retry mechanism for apt operations

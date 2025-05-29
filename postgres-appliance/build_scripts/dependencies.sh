@@ -23,6 +23,23 @@ printf "shopt -s extglob\nrm /builddeps/!(*_%s.deb)" "$ARCH" | bash -s
 
 echo -e 'APT::Install-Recommends "0";\nAPT::Install-Suggests "0";' > /etc/apt/apt.conf.d/01norecommend
 
+# Configure Aliyun mirrors for better access in China
+if [ -f /etc/apt/sources.list ]; then
+    cp /etc/apt/sources.list /etc/apt/sources.list.backup
+    cat > /etc/apt/sources.list << 'EOF'
+# Aliyun Ubuntu mirrors for better access in China
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-security main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-backports main restricted universe multiverse
+
+# Fallback to original sources
+deb http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
+EOF
+fi
+
 apt-get update
 apt-get install -y curl ca-certificates
 

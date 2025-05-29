@@ -44,6 +44,34 @@ curl -s -o - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor 
 echo "deb [signed-by=/etc/apt/keyrings/timescale_timescaledb-archive-keyring.gpg] https://packagecloud.io/timescale/timescaledb/ubuntu/ ${DISTRIB_CODENAME} main" | tee /etc/apt/sources.list.d/timescaledb.list
 curl -fsSL https://packagecloud.io/timescale/timescaledb/gpgkey | gpg --dearmor | tee /etc/apt/keyrings/timescale_timescaledb-archive-keyring.gpg > /dev/null
 
+# NOTE(KubeBlocks): Add Pigsty's GPG public key to your system keychain to verify package signatures
+# https://pigsty.io/ext/repo/apt/
+curl -fsSL https://repo.pigsty.cc/key | gpg --dearmor -o /etc/apt/keyrings/pigsty.gpg
+# Get Debian distribution codename (distro_codename=jammy, focal, bullseye, bookworm), and write the corresponding upstream repository address to the APT List file
+distro_codename=$(lsb_release -cs)
+tee /etc/apt/sources.list.d/pigsty-io.list > /dev/null <<EOF
+deb [signed-by=/etc/apt/keyrings/pigsty.gpg] https://repo.pigsty.cc/apt/infra generic main
+deb [signed-by=/etc/apt/keyrings/pigsty.gpg] https://repo.pigsty.cc/apt/pgsql/${distro_codename} main
+EOF
+
+# Add backup mirror sources for better reliability (using Aliyun mirrors for better access in China)
+if [ -f /etc/apt/sources.list ]; then
+    cp /etc/apt/sources.list /etc/apt/sources.list.backup
+    # Replace with Aliyun mirrors for better reliability in China
+    cat > /etc/apt/sources.list << 'EOF'
+# Aliyun Ubuntu mirrors for better access in China
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-security main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ jammy-backports main restricted universe multiverse
+
+# Fallback to original sources
+deb http://archive.ubuntu.com/ubuntu/ jammy main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu/ jammy-security main restricted universe multiverse
+EOF
+fi
+
 # Clean up
 apt-get purge -y libcap2-bin
 apt-get autoremove -y
