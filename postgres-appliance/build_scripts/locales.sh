@@ -6,20 +6,24 @@
 
 set -ex
 
+# Detect actual distribution codename from base image
+actual_codename=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2 | tr -d '"' || lsb_release -cs 2>/dev/null || echo "jammy")
+echo "Detected distribution codename in locales.sh: $actual_codename"
+
 # Configure Aliyun mirrors for better access in China
 if [ -f /etc/apt/sources.list ]; then
     cp /etc/apt/sources.list /etc/apt/sources.list.backup
-    cat > /etc/apt/sources.list << 'EOF'
+    cat > /etc/apt/sources.list << EOF
 # Aliyun Ubuntu mirrors for better access in China
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ bionic main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ bionic-updates main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ bionic-security main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ bionic-backports main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${actual_codename} main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${actual_codename}-updates main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${actual_codename}-security main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${actual_codename}-backports main restricted universe multiverse
 
 # Fallback to original sources
-deb http://archive.ubuntu.com/ubuntu/ bionic main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu/ bionic-updates main restricted universe multiverse
-deb http://security.ubuntu.com/ubuntu/ bionic-security main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ ${actual_codename} main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ ${actual_codename}-updates main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu/ ${actual_codename}-security main restricted universe multiverse
 EOF
 fi
 
