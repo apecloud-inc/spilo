@@ -159,7 +159,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
     done
 
     # NOTE(KubeBlocks): Install pg_duckdb extension for PostgreSQL 14+ using pgxman
-    if [ "$version" -ge 14 ] && [ "${PG_DUCKDB_VERSION:-}" != "" ]; then
+    if [ "$version" -ge 14 ]; then
         echo "Installing pg_duckdb extension for PostgreSQL $version using pgxman"
 
         # Install pgxman if not already installed
@@ -170,7 +170,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
         fi
 
         # Install pg_duckdb using pgxman
-        pgxman install pg_duckdb --pg "$version" --sudo
+        pgxman install pg_duckdb --pg "$version"
 
         echo "pg_duckdb extension installed successfully for PostgreSQL $version"
     fi
