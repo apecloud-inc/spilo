@@ -5,7 +5,7 @@ export DEBIAN_FRONTEND=noninteractive
 echo -e 'APT::Install-Recommends "0";\nAPT::Install-Suggests "0";' > /etc/apt/apt.conf.d/01norecommend
 
 # Detect actual distribution codename from base image
-distro_codename=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2 | tr -d '"' || lsb_release -cs 2>/dev/null || echo "jammy")
+distro_codename=$(sed -n 's/DISTRIB_CODENAME=//p' /etc/lsb-release)
 echo "Detected actual distribution codename: $distro_codename"
 
 # Configure mirrors based on architecture
@@ -68,23 +68,24 @@ ln -s /run/locale-archive /usr/lib/locale/locale-archive
 ln -s /usr/lib/locale/locale-archive.22 /run/locale-archive
 
 # Add PGDG repositories
+DISTRIB_CODENAME=$(sed -n 's/DISTRIB_CODENAME=//p' /etc/lsb-release)
 for t in deb deb-src; do
-    echo "$t http://apt.postgresql.org/pub/repos/apt/ ${distro_codename}-pgdg main" >> /etc/apt/sources.list.d/pgdg.list
+    echo "$t http://apt.postgresql.org/pub/repos/apt/ ${DISTRIB_CODENAME}-pgdg main" >> /etc/apt/sources.list.d/pgdg.list
 done
 curl -s -o - https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor > /etc/apt/trusted.gpg.d/apt.postgresql.org.gpg
 
 # add TimescaleDB repository
-echo "deb [signed-by=/etc/apt/keyrings/timescale_timescaledb-archive-keyring.gpg] https://packagecloud.io/timescale/timescaledb/ubuntu/ ${distro_codename} main" | tee /etc/apt/sources.list.d/timescaledb.list
+echo "deb [signed-by=/etc/apt/keyrings/timescale_timescaledb-archive-keyring.gpg] https://packagecloud.io/timescale/timescaledb/ubuntu/ ${DISTRIB_CODENAME} main" | tee /etc/apt/sources.list.d/timescaledb.list
 curl -fsSL https://packagecloud.io/timescale/timescaledb/gpgkey | gpg --dearmor | tee /etc/apt/keyrings/timescale_timescaledb-archive-keyring.gpg > /dev/null
 
 # NOTE(KubeBlocks): Add Pigsty's GPG public key to your system keychain to verify package signatures
 # https://pigsty.io/ext/repo/apt/
 curl -fsSL https://repo.pigsty.cc/key | gpg --dearmor -o /etc/apt/keyrings/pigsty.gpg
 # Get Debian distribution codename - try multiple methods
-echo "Using distribution codename for Pigsty: $distro_codename"
+echo "Using distribution codename for Pigsty: $DISTRIB_CODENAME"
 tee /etc/apt/sources.list.d/pigsty-io.list > /dev/null <<EOF
 deb [signed-by=/etc/apt/keyrings/pigsty.gpg] https://repo.pigsty.cc/apt/infra generic main
-deb [signed-by=/etc/apt/keyrings/pigsty.gpg] https://repo.pigsty.cc/apt/pgsql/${distro_codename} ${distro_codename} main
+deb [signed-by=/etc/apt/keyrings/pigsty.gpg] https://repo.pigsty.cc/apt/pgsql/${DISTRIB_CODENAME} ${DISTRIB_CODENAME} main
 EOF
 
 # Clean up

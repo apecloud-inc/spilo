@@ -7,7 +7,7 @@
 set -ex
 
 # Detect actual distribution codename from base image
-distro_codename=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2 | tr -d '"' || lsb_release -cs 2>/dev/null || echo "jammy")
+distro_codename=$(sed -n 's/DISTRIB_CODENAME=//p' /etc/lsb-release)
 echo "Detected distribution codename in locales.sh: $distro_codename"
 
 # Configure mirrors based on architecture
@@ -40,34 +40,9 @@ EOF
     fi
 fi
 
-# Add retry mechanism for apt operations
-retry_apt_install() {
-    local max_attempts=3
-    local attempt=1
-
-    while [ $attempt -le $max_attempts ]; do
-        echo "Attempt $attempt of $max_attempts..."
-        if apt-get install -y --fix-missing "$@"; then
-            echo "Installation successful on attempt $attempt"
-            return 0
-        else
-            echo "Installation failed on attempt $attempt"
-            if [ $attempt -lt $max_attempts ]; then
-                echo "Retrying in 10 seconds..."
-                sleep 10
-                apt-get update
-            fi
-            attempt=$((attempt + 1))
-        fi
-    done
-
-    echo "All attempts failed, trying with --fix-broken"
-    apt-get install -y --fix-broken --fix-missing "$@"
-}
-
 apt-get update
 apt-get -y upgrade
-retry_apt_install locales
+apt-get install -y locales
 
 # Cleanup all locales but en_US.UTF-8 and optionally specified in ADDITIONAL_LOCALES arg
 find /usr/share/i18n/charmaps/ -type f ! -name UTF-8.gz -delete

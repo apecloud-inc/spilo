@@ -13,37 +13,12 @@ sed -i 's/^#\s*\(deb.*universe\)$/\1/g' /etc/apt/sources.list
 
 apt-get update
 
-# Add retry mechanism for apt operations
-retry_apt_install() {
-    local max_attempts=3
-    local attempt=1
-
-    while [ $attempt -le $max_attempts ]; do
-        echo "Attempt $attempt of $max_attempts..."
-        if apt-get install -y --fix-missing "$@"; then
-            echo "Installation successful on attempt $attempt"
-            return 0
-        else
-            echo "Installation failed on attempt $attempt"
-            if [ $attempt -lt $max_attempts ]; then
-                echo "Retrying in 10 seconds..."
-                sleep 10
-                apt-get update
-            fi
-            attempt=$((attempt + 1))
-        fi
-    done
-
-    echo "All attempts failed, trying with --fix-broken"
-    apt-get install -y --fix-broken --fix-missing "$@"
-}
-
 BUILD_PACKAGES=(devscripts equivs build-essential fakeroot debhelper git gcc libc6-dev make cmake libevent-dev libbrotli-dev libssl-dev libkrb5-dev)
 if [ "$DEMO" = "true" ]; then
     export DEB_PG_SUPPORTED_VERSIONS="$PGVERSION"
     WITH_PERL=false
     rm -f ./*.deb
-    retry_apt_install "${BUILD_PACKAGES[@]}"
+    apt-get install -y "${BUILD_PACKAGES[@]}"
 else
     BUILD_PACKAGES+=(zlib1g-dev
                     libprotobuf-c-dev
@@ -53,7 +28,7 @@ else
                     libc-ares-dev
                     pandoc
                     pkg-config)
-    retry_apt_install "${BUILD_PACKAGES[@]}" libcurl4
+    apt-get install -y "${BUILD_PACKAGES[@]}" libcurl4
 
     # install pam_oauth2.so
     git clone -b "$PAM_OAUTH2" --recurse-submodules https://github.com/zalando-pg/pam-oauth2.git
@@ -82,7 +57,7 @@ curl -sL "https://github.com/cybertec-postgresql/pg_permissions/archive/$PG_PERM
 curl -sL "https://github.com/zubkov-andrei/pg_profile/archive/$PG_PROFILE.tar.gz" | tar xz
 git clone -b "$SET_USER" https://github.com/pgaudit/set_user.git
 
-retry_apt_install \
+apt-get install -y \
     postgresql-common \
     libevent-2.1 \
     libevent-pthreads-2.1 \
@@ -137,7 +112,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
     fi
 
     # Install PostgreSQL binaries, contrib, plproxy and multiple pl's
-    retry_apt_install --allow-downgrades -y \
+    apt-get install --allow-downgrades -y \
         "postgresql-${version}-cron" \
         "postgresql-contrib-${version}" \
         "postgresql-${version}-pgextwlist" \
@@ -164,7 +139,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
     if [ "${TIMESCALEDB_APACHE_ONLY}" != "true" ] && [ "${TIMESCALEDB_TOOLKIT}" = "true" ]; then
         apt-get update
         if [ "$(apt-cache search --names-only "^timescaledb-toolkit-postgresql-${version}$" | wc -l)" -eq 1 ]; then
-            retry_apt_install "timescaledb-toolkit-postgresql-$version"
+            apt-get install -y "timescaledb-toolkit-postgresql-$version"
         else
             echo "Skipping timescaledb-toolkit-postgresql-$version as it's not found in the repository"
         fi
@@ -185,13 +160,13 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
     done
 done
 
-retry_apt_install skytools3-ticker pgbouncer
+apt-get install -y skytools3-ticker pgbouncer
 
 sed -i "s/ main.*$/ main/g" /etc/apt/sources.list.d/pgdg.list
 apt-get update
-retry_apt_install postgresql postgresql-server-dev-all postgresql-all libpq-dev
+apt-get install -y postgresql postgresql-server-dev-all postgresql-all libpq-dev
 for version in $DEB_PG_SUPPORTED_VERSIONS; do
-    retry_apt_install "postgresql-server-dev-${version}"
+    apt-get install -y "postgresql-server-dev-${version}"
 done
 
 if [ "$DEMO" != "true" ]; then
