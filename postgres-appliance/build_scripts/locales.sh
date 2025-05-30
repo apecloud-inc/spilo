@@ -10,6 +10,14 @@ set -ex
 distro_codename=$(sed -n 's/DISTRIB_CODENAME=//p' /etc/lsb-release)
 echo "Detected distribution codename in locales.sh: $distro_codename"
 
+# Configure APT to handle weak security information for arm64
+cat > /etc/apt/apt.conf.d/99weak-security << EOF
+APT::Get::AllowInsecureRepositories "true";
+APT::Get::AllowDowngradeToInsecureRepositories "true";
+Acquire::AllowInsecureRepositories "true";
+Acquire::AllowDowngradeToInsecureRepositories "true";
+EOF
+
 # Configure mirrors based on architecture
 ARCH=$(dpkg --print-architecture)
 if [ -f /etc/apt/sources.list ]; then
@@ -18,10 +26,10 @@ if [ -f /etc/apt/sources.list ]; then
         # Use official Ubuntu ports mirror for arm64
         cat > /etc/apt/sources.list << EOF
 # Official Ubuntu ports mirror for arm64
-deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename} main restricted universe multiverse
-deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-updates main restricted universe multiverse
-deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-security main restricted universe multiverse
-deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-backports main restricted universe multiverse
+deb [trusted=yes] http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename} main restricted universe multiverse
+deb [trusted=yes] http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-updates main restricted universe multiverse
+deb [trusted=yes] http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-security main restricted universe multiverse
+deb [trusted=yes] http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-backports main restricted universe multiverse
 EOF
     else
         # Use Aliyun Ubuntu mirrors for better access in China (for amd64 and others)

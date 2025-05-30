@@ -4,6 +4,14 @@ export DEBIAN_FRONTEND=noninteractive
 
 echo -e 'APT::Install-Recommends "0";\nAPT::Install-Suggests "0";' > /etc/apt/apt.conf.d/01norecommend
 
+# Configure APT to handle weak security information for arm64
+cat > /etc/apt/apt.conf.d/99weak-security << EOF
+APT::Get::AllowInsecureRepositories "true";
+APT::Get::AllowDowngradeToInsecureRepositories "true";
+Acquire::AllowInsecureRepositories "true";
+Acquire::AllowDowngradeToInsecureRepositories "true";
+EOF
+
 # Detect actual distribution codename from base image
 distro_codename=$(sed -n 's/DISTRIB_CODENAME=//p' /etc/lsb-release)
 echo "Detected actual distribution codename: $distro_codename"
