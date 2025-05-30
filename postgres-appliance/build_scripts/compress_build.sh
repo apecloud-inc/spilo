@@ -3,24 +3,37 @@
 set -ex
 
 # Detect actual distribution codename from base image
-actual_codename=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2 | tr -d '"' || lsb_release -cs 2>/dev/null || echo "jammy")
-echo "Detected distribution codename in compress_build.sh: $actual_codename"
+distro_codename=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2 | tr -d '"' || lsb_release -cs 2>/dev/null || echo "jammy")
+echo "Detected distribution codename in compress_build.sh: $distro_codename"
 
-# Configure Aliyun mirrors for better access in China
+# Configure mirrors based on architecture
+ARCH=$(dpkg --print-architecture)
 if [ -f /etc/apt/sources.list ]; then
     cp /etc/apt/sources.list /etc/apt/sources.list.backup
-    cat > /etc/apt/sources.list << EOF
+    if [ "$ARCH" = "arm64" ]; then
+        # Use official Ubuntu ports mirror for arm64
+        cat > /etc/apt/sources.list << EOF
+# Official Ubuntu ports mirror for arm64
+deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename} main restricted universe multiverse
+deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-updates main restricted universe multiverse
+deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-security main restricted universe multiverse
+deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-backports main restricted universe multiverse
+EOF
+    else
+        # Use Aliyun Ubuntu mirrors for better access in China (for amd64 and others)
+        cat > /etc/apt/sources.list << EOF
 # Aliyun Ubuntu mirrors for better access in China
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${actual_codename} main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${actual_codename}-updates main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${actual_codename}-security main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${actual_codename}-backports main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename} main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename}-updates main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename}-security main restricted universe multiverse
+deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename}-backports main restricted universe multiverse
 
 # Fallback to original sources
-deb http://archive.ubuntu.com/ubuntu/ ${actual_codename} main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu/ ${actual_codename}-updates main restricted universe multiverse
-deb http://security.ubuntu.com/ubuntu/ ${actual_codename}-security main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ ${distro_codename} main restricted universe multiverse
+deb http://archive.ubuntu.com/ubuntu/ ${distro_codename}-updates main restricted universe multiverse
+deb http://security.ubuntu.com/ubuntu/ ${distro_codename}-security main restricted universe multiverse
 EOF
+    fi
 fi
 
 apt-get update
