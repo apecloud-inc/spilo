@@ -16,10 +16,10 @@ if [ -f /etc/apt/sources.list ]; then
         # Use official Ubuntu ports mirror for arm64
         cat > /etc/apt/sources.list << EOF
 # Official Ubuntu ports mirror for arm64
-deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename} main restricted universe multiverse
-deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-updates main restricted universe multiverse
-deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-security main restricted universe multiverse
-deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-backports main restricted universe multiverse
+deb [trusted=yes] http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename} main restricted universe multiverse
+deb [trusted=yes] http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-updates main restricted universe multiverse
+deb [trusted=yes] http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-security main restricted universe multiverse
+deb [trusted=yes] http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-backports main restricted universe multiverse
 EOF
     else
         # Use Aliyun Ubuntu mirrors for better access in China (for amd64 and others)
