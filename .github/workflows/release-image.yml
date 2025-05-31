@@ -128,5 +128,5 @@ jobs:
         with:
           src-creds: ${{ env.DOCKER_USER }}:${{ env.DOCKER_PASSWORD }}
           src-image: ${{ steps.image.outputs.DOCKER_NAME }}
-          dest-creds: ${{ env.ALIYUN_USER }}:${{ env.ALIYUN_PASSWORD }}
-          dest-image: ${{ steps.image.outputs.ALIYUN_NAME }}
+          dst-creds: ${{ env.ALIYUN_USER }}:${{ env.ALIYUN_PASSWORD }}
+          dst-image: ${{ steps.image.outputs.ALIYUN_NAME }}
