@@ -123,16 +123,10 @@ jobs:
             PGVERSION=${{ inputs.pg_version }}
             PGOLDVERSIONS=
 
-      - name: Install skopeo
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y skopeo
-
       - name: Copy image to Aliyun registry using skopeo
-        run: |
-          skopeo copy \
-            --src-creds=${{ env.DOCKER_USER }}:${{ env.DOCKER_PASSWORD }} \
-            --dest-creds=${{ env.ALIYUN_USER }}:${{ env.ALIYUN_PASSWORD }} \
-            --all \
-            docker://${{ steps.image.outputs.DOCKER_NAME }} \
-            docker://${{ steps.image.outputs.ALIYUN_NAME }}
+        uses: coscene-io/skopeo-copy-action@v1.0.0
+        with:
+          src-creds: ${{ env.DOCKER_USER }}:${{ env.DOCKER_PASSWORD }}
+          src-image: ${{ steps.image.outputs.DOCKER_NAME }}
+          dest-creds: ${{ env.ALIYUN_USER }}:${{ env.ALIYUN_PASSWORD }}
+          dest-image: ${{ steps.image.outputs.ALIYUN_NAME }}
