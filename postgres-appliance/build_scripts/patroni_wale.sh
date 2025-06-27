@@ -52,8 +52,6 @@ fi
 # NOTE(KubeBlocks): kubeblocks_hack.py requires pyjavaproperties==0.7
 pip3 install pyjavaproperties==0.7
 
-# ruamel.yaml is no longer needed - using PyYAML with custom dumper for quote handling
-
 pip3 install "patroni[kubernetes$EXTRAS]==$PATRONIVERSION"
 
 for d in /usr/local/lib/python3.10 /usr/lib/python3; do
