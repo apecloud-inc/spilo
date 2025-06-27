@@ -83,16 +83,6 @@ def get_patroni_config():
 
 
 def write_patroni_config(config, force):
-    """Write patroni config using ruamel.yaml to preserve quotes"""
-    from ruamel.yaml import YAML
-    import io
-
-    # Use ruamel.yaml for writing to preserve quotes
-    ruamel_yaml = YAML()
-    ruamel_yaml.preserve_quotes = True
-    ruamel_yaml.default_flow_style = False
-    ruamel_yaml.width = 120
-
-    stream = io.StringIO()
-    ruamel_yaml.dump(config, stream)
-    write_file(stream.getvalue(), PATRONI_CONFIG_FILE, force)
+    # NOTE(KubeBlocks): Use PyYAML with default_style="'" to add quotes to all string values.
+    config_yaml = yaml.dump(config, default_flow_style=False, default_style="'", sort_keys=False)
+    write_file(config_yaml, PATRONI_CONFIG_FILE, force)

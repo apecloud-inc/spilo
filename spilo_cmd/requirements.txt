@@ -1,6 +1,5 @@
 clickclick>=0.9
 boto>=2.37.0
 PyYAML
-ruamel.yaml
 stups>=0.6
 prettytable
