@@ -113,7 +113,7 @@ class InplaceUpgrade(object):
         from spilo_commons import get_bin_dir, get_binary_version
 
         try:
-            spilo_configuration = yaml.safe_load(os.environ.get('SPILO_CONFIGURATION', '')) or {}
+            spilo_configuration = yaml.safe_load(os.environ.get('SPILO_CONFIGURATION', ''))
             bin_dir = spilo_configuration.get('postgresql', {}).get('bin_dir')
         except Exception:
             bin_dir = None

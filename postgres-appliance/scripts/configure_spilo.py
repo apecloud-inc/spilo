@@ -40,8 +40,6 @@ AUTO_ENABLE_WALG_RESTORE = ('WAL_S3_BUCKET', 'WALE_S3_PREFIX', 'WALG_S3_PREFIX',
 WALG_SSH_NAMES = ['WALG_SSH_PREFIX', 'SSH_PRIVATE_KEY_PATH', 'SSH_USERNAME', 'SSH_PORT']
 
 
-
-
 def parse_args():
     sections = ['all', 'patroni', 'pgqd', 'certificate', 'wal-e', 'crontab',
                 'pam-oauth2', 'pgbouncer', 'bootstrap', 'standby-cluster', 'log']
@@ -1043,7 +1041,7 @@ def write_crontab(placeholders, overwrite):
         lines += [('{0} nice -n 5 envdir "{1}"' +
                    ' /scripts/upload_pg_log_to_s3.py').format(schedule, log_dir)]
 
-    lines += yaml.safe_load(placeholders['CRONTAB']) or []
+    lines += yaml.safe_load(placeholders['CRONTAB'])
 
     if len(lines) > 1 or root_lines:
         setup_runit_cron(placeholders)
