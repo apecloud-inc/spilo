@@ -21,7 +21,7 @@ import time
 import socket
 import datetime
 import subprocess
-import yaml
+from ruamel.yaml import YAML
 import configparser
 
 from clickclick import AliasedGroup, OutputFormat
@@ -596,8 +596,10 @@ def load_odd_config():
     odd_config = {'user_name':None, 'odd_host':None}
 
     if options.get('odd_config_file') is not None and os.path.isfile(options['odd_config_file']):
+        yaml = YAML()
+        yaml.preserve_quotes = True
         with open(options['odd_config_file'], 'r') as f:
-            odd_config = yaml.safe_load(f)
+            odd_config = yaml.load(f)
         logging.debug('Loaded odd configuration from {}:\n{}'.format(options['odd_config_file'], pretty(odd_config)))
 
     return odd_config

@@ -18,7 +18,7 @@ from copy import deepcopy
 from six.moves.urllib_parse import urlparse
 from collections import defaultdict
 
-import yaml
+from ruamel.yaml import YAML
 import pystache
 import requests
 
@@ -27,6 +27,12 @@ from spilo_commons import RW_DIR, PATRONI_CONFIG_FILE, append_extensions, \
 
 # NOTE(KubeBlocks): added by KubeBlocks
 from kubeblocks_hack import prepare
+
+# Initialize YAML instance with preserve_quotes enabled
+yaml = YAML()
+yaml.preserve_quotes = True
+yaml.default_flow_style = False
+yaml.width = 120
 
 PROVIDER_AWS = "aws"
 PROVIDER_GOOGLE = "google"
@@ -736,7 +742,7 @@ def get_dcs_config(config, placeholders):
             if param == 'hosts':
                 if not (value.strip().startswith('-') or '[' in value):
                     value = '[{0}]'.format(value)
-                value = yaml.safe_load(value)
+                value = yaml.load(value)
             elif param == 'discovery_domain':
                 param = 'discovery_srv'
             dcs_configs[dcs][param] = value
@@ -1041,7 +1047,7 @@ def write_crontab(placeholders, overwrite):
         lines += [('{0} nice -n 5 envdir "{1}"' +
                    ' /scripts/upload_pg_log_to_s3.py').format(schedule, log_dir)]
 
-    lines += yaml.safe_load(placeholders['CRONTAB'])
+    lines += yaml.load(placeholders['CRONTAB'])
 
     if len(lines) > 1 or root_lines:
         setup_runit_cron(placeholders)
@@ -1097,10 +1103,10 @@ def main():
     placeholders = get_placeholders(provider)
     logging.info('Looks like you are running %s', provider)
 
-    config = yaml.safe_load(pystache_render(TEMPLATE, placeholders))
+    config = yaml.load(pystache_render(TEMPLATE, placeholders))
     config.update(get_dcs_config(config, placeholders))
 
-    user_config = yaml.safe_load(os.environ.get('SPILO_CONFIGURATION',
+    user_config = yaml.load(os.environ.get('SPILO_CONFIGURATION',
                                                 os.environ.get('PATRONI_CONFIGURATION', ''))) or {}
     if not isinstance(user_config, dict):
         config_var_name = 'SPILO_CONFIGURATION' if 'SPILO_CONFIGURATION' in os.environ else 'PATRONI_CONFIGURATION'
