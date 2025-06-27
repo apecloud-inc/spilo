@@ -52,7 +52,7 @@ fi
 # NOTE(KubeBlocks): kubeblocks_hack.py requires pyjavaproperties==0.7
 pip3 install pyjavaproperties==0.7
 
-# Install ruamel.yaml for YAML processing with quote preservation
+# Install ruamel.yaml for YAML processing with quote preservation (used alongside PyYAML)
 pip3 install ruamel.yaml
 
 pip3 install "patroni[kubernetes$EXTRAS]==$PATRONIVERSION"

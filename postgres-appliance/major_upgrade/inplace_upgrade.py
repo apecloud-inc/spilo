@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import sys
 import time
-from ruamel.yaml import YAML
+import yaml
 
 from collections import defaultdict
 from threading import Thread
@@ -113,9 +113,7 @@ class InplaceUpgrade(object):
         from spilo_commons import get_bin_dir, get_binary_version
 
         try:
-            yaml = YAML()
-            yaml.preserve_quotes = True
-            spilo_configuration = yaml.load(os.environ.get('SPILO_CONFIGURATION', ''))
+            spilo_configuration = yaml.safe_load(os.environ.get('SPILO_CONFIGURATION', '')) or {}
             bin_dir = spilo_configuration.get('postgresql', {}).get('bin_dir')
         except Exception:
             bin_dir = None

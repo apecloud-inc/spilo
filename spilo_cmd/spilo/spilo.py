@@ -598,8 +598,11 @@ def load_odd_config():
     if options.get('odd_config_file') is not None and os.path.isfile(options['odd_config_file']):
         yaml = YAML()
         yaml.preserve_quotes = True
+        yaml.map_type = dict
+        yaml.sequence_type = list
         with open(options['odd_config_file'], 'r') as f:
-            odd_config = yaml.load(f)
+            content = f.read()
+            odd_config = yaml.load(content) if content.strip() else {}
         logging.debug('Loaded odd configuration from {}:\n{}'.format(options['odd_config_file'], pretty(odd_config)))
 
     return odd_config

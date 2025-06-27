@@ -2,15 +2,9 @@ import logging
 import os
 import subprocess
 import re
-from ruamel.yaml import YAML
+import yaml
 
 logger = logging.getLogger('__name__')
-
-# Initialize YAML instance with preserve_quotes enabled
-yaml = YAML()
-yaml.preserve_quotes = True
-yaml.default_flow_style = False
-yaml.width = 120
 
 RW_DIR = os.environ.get('RW_DIR', '/run')
 PATRONI_CONFIG_FILE = os.path.join(RW_DIR, 'postgres.yml')
@@ -85,11 +79,20 @@ def write_file(config, filename, overwrite):
 
 def get_patroni_config():
     with open(PATRONI_CONFIG_FILE) as f:
-        return yaml.load(f)
+        return yaml.safe_load(f)
 
 
 def write_patroni_config(config, force):
+    """Write patroni config using ruamel.yaml to preserve quotes"""
+    from ruamel.yaml import YAML
     import io
+
+    # Use ruamel.yaml for writing to preserve quotes
+    ruamel_yaml = YAML()
+    ruamel_yaml.preserve_quotes = True
+    ruamel_yaml.default_flow_style = False
+    ruamel_yaml.width = 120
+
     stream = io.StringIO()
-    yaml.dump(config, stream)
+    ruamel_yaml.dump(config, stream)
     write_file(stream.getvalue(), PATRONI_CONFIG_FILE, force)

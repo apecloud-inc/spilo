@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from ruamel.yaml import YAML
+import yaml
 import logging
 
 from pyjavaproperties import Properties
-
-# Initialize YAML instance with preserve_quotes enabled
-yaml = YAML()
-yaml.preserve_quotes = True
-yaml.default_flow_style = False
 
 _DYNAMIC_PARAMETERS = [
     'archive_mode',
@@ -126,7 +121,4 @@ def prepare(config_file, local_config):
     update_local_config(props, postgresql)
 
     # print kubeblocks generated local_config
-    import io
-    stream = io.StringIO()
-    yaml.dump(local_config, stream)
-    logging.info('kubeblocks generate local configuration: \n%s', stream.getvalue())
+    logging.info('kubeblocks generate local configuration: \n%s', yaml.dump(local_config, default_flow_style=False))
