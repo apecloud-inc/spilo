@@ -1,0 +1,21 @@
+# Extract wal-g binary from the specified image
+FROM apecloud/wal-g:postgres-1.2 as wal-g-source
+
+# Main image - use same base as main Dockerfile
+FROM ubuntu:22.04
+
+LABEL maintainer="ApeCloud"
+
+# Copy wal-g binary from the source image
+COPY --from=wal-g-source /usr/bin/wal-g /spilo-init/bin/wal-g
+
+# Copy scripts
+COPY scripts bootstrap major_upgrade /spilo-init/scripts/
+COPY launch.sh /spilo-init/
+
+# Make wal-g executable
+RUN chmod +x /spilo-init/bin/wal-g
+
+# This image is meant to be used as an init container
+# Files are available in /spilo-init/ for manual copying
+CMD ["echo", "Spilo init container ready - files available in /spilo-init/"]
