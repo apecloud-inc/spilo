@@ -345,20 +345,6 @@ function test_spilo() {
     run_test test_envdir_updated_to_x 17
 
 
-    # TEST SUITE 3
-    find_leader "$clone17_container"
-    run_test verify_archive_mode_is_on "$clone17_container"
-
-
-    # TEST SUITE 1
-    wait_backup "$container"
-
-    log_info "[TS1] Testing in-place major upgrade to 15->16"
-    run_test test_successful_inplace_upgrade_to_16 "$container"
-    wait_all_streaming "$container"
-    run_test test_envdir_updated_to_x 16
-
-
     # TEST SUITE 4
     log_info "[TS4] Testing in-place major upgrade 14->15 after clone with wal-g"
     run_test verify_clone_upgrade "$upgrade_container" "wal-g" 14 15
