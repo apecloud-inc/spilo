@@ -413,18 +413,23 @@ def get_provider():
         logging.info("Figuring out my environment (Google? AWS? Openstack? Local?)")
         response = requests.put(
             url='http://169.254.169.254/latest/api/token',
-            headers={'X-aws-ec2-metadata-token-ttl-seconds': '60'}
+            headers={'X-aws-ec2-metadata-token-ttl-seconds': '60'},
+            timeout=2
         )
+        if not response.ok:
+            logging.info("Failed to get IMDS token (status %s), assuming local Docker setup", response.status_code)
+            return PROVIDER_LOCAL
         token = response.text
         r = requests.get(
             url='http://169.254.169.254',
-            headers={'X-aws-ec2-metadata-token': token}
+            headers={'X-aws-ec2-metadata-token': token},
+            timeout=2
         )
         if r.headers.get('Metadata-Flavor', '') == 'Google':
             return PROVIDER_GOOGLE
         else:
             # accessible on Openstack, will fail on AWS
-            r = requests.get('http://169.254.169.254/openstack/latest/meta_data.json')
+            r = requests.get('http://169.254.169.254/openstack/latest/meta_data.json', timeout=2)
             if r.ok:
                 # make sure the response is parsable - https://github.com/Azure/aad-pod-identity/issues/943 and
                 # https://github.com/zalando/spilo/issues/542
@@ -434,7 +439,8 @@ def get_provider():
             # is accessible from both AWS and Openstack, Possiblity of misidentification if previous try fails
             r = requests.get(
                 url='http://169.254.169.254/latest/meta-data/ami-id',
-                headers={'X-aws-ec2-metadata-token': token}
+                headers={'X-aws-ec2-metadata-token': token},
+                timeout=2
             )
             return PROVIDER_AWS if r.ok else PROVIDER_UNSUPPORTED
     except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
@@ -983,7 +989,12 @@ def update_and_write_walg_configuration(placeholders, prefix, overwrite):
 def write_clone_pgpass(placeholders, overwrite):
     pgpassfile = placeholders['CLONE_PGPASS']
     # pgpass is host:port:database:user:password
-    r = {'host': escape_pgpass_value(placeholders['CLONE_HOST']),
+    clone_host = escape_pgpass_value(placeholders['CLONE_HOST'])
+    # IPv6 addresses contain colons which conflict with the pgpass delimiter;
+    # wrap them in brackets so libpq can parse the host field correctly.
+    if ':' in str(clone_host):
+        clone_host = f'[{clone_host}]'
+    r = {'host': clone_host,
          'port': placeholders['CLONE_PORT'],
          'database': '*',
          'user': escape_pgpass_value(placeholders['CLONE_USER']),
