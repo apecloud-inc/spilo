@@ -134,7 +134,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
 
     exclude_patterns=()
     versions=$(find "/usr/lib/postgresql/$version/lib/" -name 'timescaledb-2.*.so' | sed -rn 's/.*timescaledb-([1-9]+\.[0-9]+\.[0-9]+)\.so$/\1/p' | sort -rV)
-    
+
     # Calculate the number of versions dynamically based on the lowest PG version's latest minor
     num_versions=5
     if [ -n "$first_latest_minor" ]; then
@@ -148,13 +148,13 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
                 break
             fi
         done <<< "$minor_versions"
-        
+
         # if found, keep max(5, position) versions (so all versions have at least 1 version in common with lowest PG version)
         if [ $found -eq 1 ] && [ $position -gt $num_versions ]; then
             num_versions=$position
         fi
     fi
-    
+
     latest_minor_versions=$(echo "$versions" | awk -F. '{print $1"."$2}' | uniq | head -n "$num_versions")
     for minor in $latest_minor_versions; do
         for full_version in $(echo "$versions" | grep "^$minor"); do
@@ -234,6 +234,11 @@ apt-get purge -y \
 apt-get autoremove -y
 apt-get clean
 dpkg -l | grep '^rc' | awk '{print $2}' | xargs apt-get purge -y
+
+# Generate zh_CN.UTF-8 locale
+apt-get install -y locales
+echo "zh_CN.UTF-8 UTF-8" >> /etc/locale.gen
+locale-gen
 
 # Try to minimize size by creating symlinks instead of duplicate files
 if [ "$DEMO" != "true" ]; then
@@ -317,8 +322,6 @@ rm -rf /var/lib/apt/lists/* \
         /usr/share/doc \
         /usr/share/man \
         /usr/share/info \
-        /usr/share/locale/?? \
-        /usr/share/locale/??_?? \
         /usr/share/postgresql/*/man \
         /etc/pgbouncer/* \
         /usr/lib/postgresql/*/bin/createdb \
@@ -329,4 +332,6 @@ rm -rf /var/lib/apt/lists/* \
         /usr/lib/postgresql/*/bin/dropuser \
         /usr/lib/postgresql/*/bin/pg_standby \
         /usr/lib/postgresql/*/bin/pltcl_*
+# Remove locale dirs except zh/zh_CN (needed for zh_CN.UTF-8 support)
+find /usr/share/locale -maxdepth 1 -mindepth 1 \( -name '??' -o -name '??_??' \) ! -name 'zh' ! -name 'zh_CN' -exec rm -rf {} +
 find /var/log -type f -exec truncate --size 0 {} \;
