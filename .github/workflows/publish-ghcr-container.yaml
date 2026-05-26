@@ -5,6 +5,12 @@ on:
       - '*'
     branches:
       - dev-18
+  workflow_dispatch:
+    inputs:
+      additional_locales:
+        description: 'Space-separated extra locales to include (e.g. zh_CN de_DE)'
+        required: false
+        default: 'zh_CN'
 
 env:
   REGISTRY: ghcr.io
@@ -63,6 +69,8 @@ jobs:
         context: "postgres-appliance/"
         load: true
         tags: ${{ steps.image.outputs.NAME }}
+        build-args: |
+          ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
 
     - name: Test spilo docker image 
       env:
@@ -77,3 +85,5 @@ jobs:
         push: true
         tags: "${{ steps.image.outputs.NAME }}"
         platforms: linux/amd64,linux/arm64
+        build-args: |
+          ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
