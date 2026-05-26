@@ -15,6 +15,10 @@ on:
         required: false
         type: boolean
         default: false
+      additional_locales:
+        description: 'Space-separated extra locales to include (e.g. zh_CN de_DE)'
+        required: false
+        default: 'zh_CN'
 
   release:
     types:
@@ -28,7 +32,7 @@ env:
   ALIYUN_USER: ${{ secrets.ALIYUN_REGISTRY_USER }}
   ALIYUN_PASSWORD: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
 
-run-name: release image_tag:${{ inputs.image_tag }} pg_version:${{ inputs.pg_version }} skip_test:${{ inputs.skip_test }}
+run-name: release image_tag:${{ inputs.image_tag }} pg_version:${{ inputs.pg_version }} locales:${{ inputs.additional_locales }} skip_test:${{ inputs.skip_test }}
 
 jobs:
   image-tag:
@@ -103,6 +107,7 @@ jobs:
           build-args: |
             PGVERSION=${{ inputs.pg_version }}
             PGOLDVERSIONS=${{ inputs.pg_old_versions }}
+            ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
 
       - name: Test spilo docker image
         if: ${{ !inputs.skip_test }}
@@ -122,6 +127,7 @@ jobs:
           build-args: |
             PGVERSION=${{ inputs.pg_version }}
             PGOLDVERSIONS=
+            ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
 
       - name: Copy image to Aliyun registry using skopeo
         uses: coscene-io/skopeo-copy-action@v1.0.0
