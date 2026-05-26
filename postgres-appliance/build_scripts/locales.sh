@@ -57,7 +57,7 @@ find /usr/share/i18n/charmaps/ -type f ! -name UTF-8.gz -delete
 
 # Prepare find expression for locales
 LOCALE_FIND_EXPR=(-type f)
-for loc in en_US en_GB $ADDITIONAL_LOCALES "i18n*" iso14651_t1 iso14651_t1_common "translit_*"; do
+for loc in en_US en_GB $ADDITIONAL_LOCALES "i18n*" iso14651_t1 iso14651_t1_common iso14651_t1_pinyin "translit_*"; do
     LOCALE_FIND_EXPR+=(! -name "$loc")
 done
 find /usr/share/i18n/locales/ "${LOCALE_FIND_EXPR[@]}" -delete
