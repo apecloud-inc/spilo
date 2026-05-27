@@ -141,7 +141,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
 
     exclude_patterns=()
     versions=$(find "/usr/lib/postgresql/$version/lib/" -name 'timescaledb-2.*.so' | sed -rn 's/.*timescaledb-([1-9]+\.[0-9]+\.[0-9]+)\.so$/\1/p' | sort -rV)
-    
+
     # Calculate the number of versions dynamically based on the lowest PG version's latest minor
     num_versions=5
     if [ -n "$first_latest_minor" ]; then
@@ -155,13 +155,13 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
                 break
             fi
         done <<< "$minor_versions"
-        
+
         # if found, keep max(5, position) versions (so all versions have at least 1 version in common with lowest PG version)
         if [ $found -eq 1 ] && [ $position -gt $num_versions ]; then
             num_versions=$position
         fi
     fi
-    
+
     latest_minor_versions=$(echo "$versions" | awk -F. '{print $1"."$2}' | uniq | head -n "$num_versions")
     for minor in $latest_minor_versions; do
         for full_version in $(echo "$versions" | grep "^$minor"); do
