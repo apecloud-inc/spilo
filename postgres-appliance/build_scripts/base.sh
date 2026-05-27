@@ -93,8 +93,15 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
                 "postgresql-${version}-decoderbufs"
                 "postgresql-${version}-pllua"
                 "postgresql-${version}-pgvector"
-                "postgresql-${version}-roaringbitmap"
-                "postgresql-${version}-pgfaceting")
+                "postgresql-${version}-roaringbitmap")
+
+        for pkg in pgfaceting; do
+            if [ "$(apt-cache search --names-only "^postgresql-${version}-${pkg}$" | wc -l)" -eq 1 ]; then
+                EXTRAS+=("postgresql-${version}-${pkg}")
+            else
+                echo "Skipping postgresql-${version}-${pkg} as it's not found in the repository"
+            fi
+        done
 
         if [ "$version" != "18" ]; then
             EXTRAS+=("postgresql-${version}-pgl-ddl-deploy"
