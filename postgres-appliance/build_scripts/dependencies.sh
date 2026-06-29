@@ -40,18 +40,11 @@ deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-security main restr
 deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-backports main restricted universe multiverse
 EOF
     else
-        # Use Aliyun Ubuntu mirrors for better access in China (for amd64 and others)
         cat > /etc/apt/sources.list << EOF
-# Aliyun Ubuntu mirrors for better access in China
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename} main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename}-updates main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename}-security main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename}-backports main restricted universe multiverse
-
-# Fallback to original sources
-deb http://archive.ubuntu.com/ubuntu/ ${distro_codename} main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu/ ${distro_codename}-updates main restricted universe multiverse
-deb http://security.ubuntu.com/ubuntu/ ${distro_codename}-security main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ ${distro_codename} main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ ${distro_codename}-updates main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ ${distro_codename}-security main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ ${distro_codename}-backports main restricted universe multiverse
 EOF
     fi
 fi
@@ -61,12 +54,12 @@ apt-get install -y curl ca-certificates
 
 mkdir /builddeps/wal-g
 
-if [ "$ARCH" = "amd64" ]; then
-    PKG_NAME='wal-g-pg-22.04-amd64'
-else
-    PKG_NAME='wal-g-pg-22.04-aarch64'
-fi
+#if [ "$ARCH" = "amd64" ]; then
+#    PKG_NAME='wal-g-pg-22.04-amd64'
+#else
+#    PKG_NAME='wal-g-pg-22.04-aarch64'
+#fi
 
-curl -sL "https://github.com/wal-g/wal-g/releases/download/$WALG_VERSION/$PKG_NAME.tar.gz" \
-            | tar -C /builddeps/wal-g -xz
-mv "/builddeps/wal-g/$PKG_NAME" /builddeps/wal-g/wal-g
+#curl -sL "https://github.com/wal-g/wal-g/releases/download/$WALG_VERSION/$PKG_NAME.tar.gz" \
+#            | tar -C /builddeps/wal-g -xz
+#mv "/builddeps/wal-g/$PKG_NAME" /builddeps/wal-g/wal-g

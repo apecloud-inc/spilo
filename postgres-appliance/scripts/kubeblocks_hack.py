@@ -92,17 +92,29 @@ def update_local_config(props, config):
 
 
 def prepare(config_file, local_config):
+    """
+    Prepare the local configuration by setting up PostgreSQL and bootstrap configurations,
+    and updating dynamic configurations based on the provided config file.
+    Args:
+        config_file (str): Path to the PostgreSQL configuration file
+        local_config (dict): Dictionary containing local configuration settings
+    """
+    # Initialize PostgreSQL configuration if not present
     if 'postgresql' not in local_config:
         local_config['postgresql'] = {}
 
+    # Initialize bootstrap configuration if not present
     if 'bootstrap' not in local_config:
         local_config['bootstrap'] = {}
 
+    # Get PostgreSQL configuration dictionary
     postgresql = local_config['postgresql']
-    # postgresql['config_dir'] = _PG_CONF_DIR
+    # postgresql['config_dir'] = _PG_CONF_DIR  # This line is commented out
+    # Set custom configuration file if not already set
     if 'custom_conf' not in postgresql:
         postgresql['custom_conf'] = config_file
 
+    # Create Properties object to handle configuration file
     props = Properties()
     # parse postgresql.conf
     with open(config_file, 'r') as conf:

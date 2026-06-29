@@ -3,6 +3,7 @@ ARG PGVERSION=18
 ARG DEMO=false
 ARG COMPRESS=false
 ARG ADDITIONAL_LOCALES=
+ARG HE3SQL=false
 
 
 FROM ubuntu:18.04 as ubuntu-18
@@ -12,6 +13,13 @@ ARG ADDITIONAL_LOCALES
 COPY build_scripts/locales.sh /builddeps/
 
 RUN bash /builddeps/locales.sh
+
+
+FROM ubuntu:20.04 as focal-libssl
+
+RUN sed -i 's|http://archive.ubuntu.com|http://mirrors.aliyun.com|g; s|http://security.ubuntu.com|http://mirrors.aliyun.com|g' /etc/apt/sources.list && \
+    apt-get update && apt-get install -y --no-install-recommends libssl1.1 && \
+    rm -rf /var/lib/apt/lists/*
 
 
 FROM $BASE_IMAGE as dependencies-builder
@@ -31,6 +39,7 @@ FROM $BASE_IMAGE as builder-false
 
 ARG DEMO
 ARG ADDITIONAL_LOCALES
+ARG HE3SQL
 
 COPY build_scripts/prepare.sh build_scripts/locales.sh /builddeps/
 
@@ -38,9 +47,13 @@ RUN bash /builddeps/prepare.sh
 
 COPY --from=ubuntu-18 /usr/lib/locale/locale-archive /usr/lib/locale/locale-archive.18
 
+COPY --from=focal-libssl /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/
+COPY --from=focal-libssl /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/
+
 COPY cron_unprivileged.c /builddeps/
 COPY build_scripts/base.sh /builddeps/
 COPY --from=dependencies-builder /builddeps/*.deb /builddeps/
+COPY build_scripts/he3sql_overlay.sh /tmp/
 
 ARG PGVERSION
 ARG TIMESCALEDB_APACHE_ONLY=true
@@ -63,7 +76,10 @@ ENV POSTGIS_VERSION=3.6 \
     PG_PERMISSIONS_COMMIT=f4b7c18676fa64236a1c8e28d34a35764e4a70e2
 
 WORKDIR /builddeps
+COPY he3sql /he3sql/
 RUN bash base.sh
+RUN if [ "$HE3SQL" = "true" ]; then bash /tmp/he3sql_overlay.sh; fi && \
+    rm -rf /he3sql /tmp/he3sql_overlay.sh
 
 # Install wal-g
 COPY --from=dependencies-builder /builddeps/wal-g /usr/local/bin/

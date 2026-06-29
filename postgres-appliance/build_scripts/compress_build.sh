@@ -20,18 +20,11 @@ deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-security main restr
 deb http://ports.ubuntu.com/ubuntu-ports/ ${distro_codename}-backports main restricted universe multiverse
 EOF
     else
-        # Use Aliyun Ubuntu mirrors for better access in China (for amd64 and others)
         cat > /etc/apt/sources.list << EOF
-# Aliyun Ubuntu mirrors for better access in China
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename} main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename}-updates main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename}-security main restricted universe multiverse
-deb http://mirrors.cloud.aliyuncs.com/ubuntu/ ${distro_codename}-backports main restricted universe multiverse
-
-# Fallback to original sources
-deb http://archive.ubuntu.com/ubuntu/ ${distro_codename} main restricted universe multiverse
-deb http://archive.ubuntu.com/ubuntu/ ${distro_codename}-updates main restricted universe multiverse
-deb http://security.ubuntu.com/ubuntu/ ${distro_codename}-security main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ ${distro_codename} main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ ${distro_codename}-updates main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ ${distro_codename}-security main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ ${distro_codename}-backports main restricted universe multiverse
 EOF
     fi
 fi

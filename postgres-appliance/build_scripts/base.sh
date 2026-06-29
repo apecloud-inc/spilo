@@ -205,7 +205,7 @@ apt-get install -y skytools3-ticker pgbouncer
 
 sed -i "s/ main.*$/ main/g" /etc/apt/sources.list.d/pgdg.list
 apt-get update
-apt-get install -y postgresql postgresql-server-dev-all postgresql-all libpq-dev
+apt-get install -y postgresql libpq-dev
 for version in $DEB_PG_SUPPORTED_VERSIONS; do
     apt-get install -y "postgresql-server-dev-${version}"
 done
@@ -233,7 +233,6 @@ apt-get purge -y \
                 libperl5.* \
                 perl-modules-5.* \
                 postgresql \
-                postgresql-all \
                 postgresql-server-dev-* \
                 libpq-dev=* \
                 libmagic1 \
