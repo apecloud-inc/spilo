@@ -101,7 +101,12 @@ fi
 
 PGVER=$(psql "$CONNSTR" -tAc "SELECT pg_catalog.current_setting('server_version_num')::int/10000" || echo 0)
 if [[ $PGVER -ge 15 ]]; then
-    PG_BASEBACKUP_OPTS+=("--compress=server-lz4")
+    # server-lz4 requires --with-lz4 at build time; fall back to gzip if unavailable
+    if psql "$CONNSTR" -tAc "SELECT EXISTS(SELECT 1 FROM pg_config() WHERE name = 'CONFIGURE' AND setting LIKE '%--with-lz4%')" 2>/dev/null | grep -q '^t$'; then
+        PG_BASEBACKUP_OPTS+=("--compress=server-lz4")
+    else
+        PG_BASEBACKUP_OPTS+=("--compress=server-gzip")
+    fi
 fi
 
 ATTEMPT=0
