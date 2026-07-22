@@ -95,7 +95,7 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
                 "postgresql-${version}-pgvector"
                 "postgresql-${version}-roaringbitmap")
 
-        for pkg in pgfaceting; do
+        for pkg in pgfaceting age; do
             if [ "$(apt-cache search --names-only "^postgresql-${version}-${pkg}$" | wc -l)" -eq 1 ]; then
                 EXTRAS+=("postgresql-${version}-${pkg}")
             else

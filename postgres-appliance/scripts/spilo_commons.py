@@ -17,6 +17,7 @@ extensions = {
     'pg_stat_kcache': (9.4, 18, True,  False),
     'pg_partman':     (9.4, 18, False, True),
     'pg_duckdb':      (14, 18, True,  False),
+    'age':            (11, 18, True,  True),
 }
 if os.environ.get('ENABLE_PG_MON') == 'true':
     extensions['pg_mon'] = (11,  18, True,  False)
