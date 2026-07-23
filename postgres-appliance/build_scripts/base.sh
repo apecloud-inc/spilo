@@ -15,16 +15,17 @@ set -ex
 # Replace /sbin/ldconfig and /usr/sbin/ldconfig with a wrapper that no-ops under QEMU
 # and delegates to /sbin/ldconfig.real at runtime. The real binary is preserved so any
 # callers that exec /sbin/ldconfig.real directly (e.g. QEMU binfmt wrappers) can find it.
-if [ "$(uname -m)" != "$(dpkg --print-architecture)" ]; then
+if ls /proc/sys/fs/binfmt_misc/qemu-* >/dev/null 2>&1; then
     cp -p /sbin/ldconfig /sbin/ldconfig.real
     cat > /sbin/ldconfig <<'EOF'
 #!/bin/sh
-[ "$(uname -m)" != "$(dpkg --print-architecture)" ] && exit 0
+ls /proc/sys/fs/binfmt_misc/qemu-* >/dev/null 2>&1 && exit 0
 exec /sbin/ldconfig.real "$@"
 EOF
     chmod 755 /sbin/ldconfig
 
-    if [ -e /usr/sbin/ldconfig ] && [ ! -L /usr/sbin/ldconfig ]; then
+    # /usr/sbin/ldconfig may be a symlink or the same file; only replace when needed
+    if [ -e /usr/sbin/ldconfig ] && [ ! /sbin/ldconfig -ef /usr/sbin/ldconfig ]; then
         cp -p /sbin/ldconfig /usr/sbin/ldconfig
     fi
 
