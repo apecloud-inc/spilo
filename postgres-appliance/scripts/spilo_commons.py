@@ -84,4 +84,6 @@ def get_patroni_config():
 
 
 def write_patroni_config(config, force):
-    write_file(yaml.dump(config, default_flow_style=False, width=120), PATRONI_CONFIG_FILE, force)
+    # NOTE(KubeBlocks): Use PyYAML with default_style="'" to add quotes to all string values.
+    config_yaml = yaml.dump(config, default_flow_style=False, default_style="'", sort_keys=False)
+    write_file(config_yaml, PATRONI_CONFIG_FILE, force)

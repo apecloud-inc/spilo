@@ -121,4 +121,4 @@ def prepare(config_file, local_config):
     update_local_config(props, postgresql)
 
     # print kubeblocks generated local_config
-    logging.info('kubeblocks generate local configuration: \n%s', yaml.dump(local_config, default_flow_style=False))
+    logging.info('kubeblocks generate local configuration: \n%s', yaml.dump(local_config, default_flow_style=False, default_style="'"))
