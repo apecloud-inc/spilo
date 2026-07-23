@@ -1,5 +1,5 @@
 # Extract wal-g binary from the specified image
-FROM apecloud/wal-g:postgres-1.2 as wal-g-source
+FROM apecloud/wal-g-pg:3.0.0 as wal-g-source
 
 # Main image - use same base as main Dockerfile
 FROM ubuntu:22.04
