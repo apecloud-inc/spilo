@@ -9,24 +9,6 @@ MAKEFLAGS="-j $(grep -c ^processor /proc/cpuinfo)"
 export MAKEFLAGS
 
 set -ex
-
-# Workaround: ldconfig segfaults under QEMU cross-architecture emulation during apt
-# package post-installation. This affects multi-arch builds (e.g., linux/arm64 on amd64).
-# We temporarily replace ldconfig with a no-op and restore it before the script exits.
-if [ "$(uname -m)" != "$(dpkg --print-architecture)" ]; then
-    mv /sbin/ldconfig /sbin/ldconfig.real
-    install -m 755 /bin/true /sbin/ldconfig
-    echo "QEMU cross-arch build detected: replaced ldconfig with no-op workaround"
-fi
-
-restore_ldconfig() {
-    if [ -f /sbin/ldconfig.real ]; then
-        mv /sbin/ldconfig.real /sbin/ldconfig
-        echo "Restored original ldconfig"
-    fi
-}
-trap restore_ldconfig EXIT
-
 sed -i 's/^#\s*\(deb.*universe\)$/\1/g' /etc/apt/sources.list
 
 apt-get update
