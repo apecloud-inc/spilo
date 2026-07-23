@@ -12,20 +12,25 @@ set -ex
 
 # Workaround: ldconfig segfaults under QEMU cross-architecture emulation during apt
 # package post-installation. This affects multi-arch builds (e.g., linux/arm64 on amd64).
-# We temporarily replace ldconfig with a no-op and restore it before the script exits.
-if [ "$(uname -m)" != "$(dpkg --print-architecture)" ]; then
-    mv /sbin/ldconfig /sbin/ldconfig.real
-    install -m 755 /bin/true /sbin/ldconfig
-    echo "QEMU cross-arch build detected: replaced ldconfig with no-op workaround"
-fi
+# Replace /sbin/ldconfig and /usr/sbin/ldconfig with a wrapper that no-ops under QEMU
+# and delegates to /sbin/ldconfig.real at runtime. The real binary is preserved so any
+# callers that exec /sbin/ldconfig.real directly (e.g. QEMU binfmt wrappers) can find it.
+if grep -qi qemu /proc/cpuinfo 2>/dev/null; then
+    cp -p /sbin/ldconfig /sbin/ldconfig.real
+    cat > /sbin/ldconfig <<'EOF'
+#!/bin/sh
+grep -qi qemu /proc/cpuinfo 2>/dev/null && exit 0
+exec /sbin/ldconfig.real "$@"
+EOF
+    chmod 755 /sbin/ldconfig
 
-restore_ldconfig() {
-    if [ -f /sbin/ldconfig.real ]; then
-        mv /sbin/ldconfig.real /sbin/ldconfig
-        echo "Restored original ldconfig"
+    # /usr/sbin/ldconfig may be a symlink or the same file; only replace when needed
+    if [ -e /usr/sbin/ldconfig ] && [ ! /sbin/ldconfig -ef /usr/sbin/ldconfig ]; then
+        cp -p /sbin/ldconfig /usr/sbin/ldconfig
     fi
-}
-trap restore_ldconfig EXIT
+
+    echo "QEMU cross-arch build detected: installed ldconfig wrapper workaround"
+fi
 
 sed -i 's/^#\s*\(deb.*universe\)$/\1/g' /etc/apt/sources.list
 
