@@ -328,12 +328,8 @@ rm -rf /var/lib/apt/lists/* \
         /usr/share/locale/??_?? \
         /usr/share/postgresql/*/man \
         /etc/pgbouncer/* \
-        /usr/lib/postgresql/*/bin/createdb \
         /usr/lib/postgresql/*/bin/createlang \
-        /usr/lib/postgresql/*/bin/createuser \
-        /usr/lib/postgresql/*/bin/dropdb \
         /usr/lib/postgresql/*/bin/droplang \
-        /usr/lib/postgresql/*/bin/dropuser \
         /usr/lib/postgresql/*/bin/pg_standby \
         /usr/lib/postgresql/*/bin/pltcl_*
 find /var/log -type f -exec truncate --size 0 {} \;
