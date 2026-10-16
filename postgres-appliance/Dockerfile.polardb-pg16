@@ -1,0 +1,44 @@
+# syntax=docker/dockerfile:1.7@sha256:a57df69d0ea827fb7266491f2813635de6f17269be881f696fbfdf2d83dda33e
+
+ARG SPILO_BASE_IMAGE=apecloud/spilo:16.14@sha256:b8522b0bbbfd6d08a1aee3c03f61ff427c7ce6938e15f03d78b2955fd7a981e9
+ARG POLARDB_EXTRACTOR_IMAGE=ubuntu:22.04@sha256:2edbbc5dc405e9612ba3584ce95480277e3eb374407b5505fe26f17df77c7dbc
+
+FROM ${POLARDB_EXTRACTOR_IMAGE} AS polardb-extractor
+
+ARG TARGETARCH
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libarchive-tools \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY build_scripts/extract_polardb_pg16.sh /usr/local/bin/extract-polardb-pg
+
+RUN --network=none \
+    --mount=type=bind,from=polardb_rpms,target=/polardb-rpms \
+    TARGETARCH="$TARGETARCH" /usr/local/bin/extract-polardb-pg
+
+
+FROM ${SPILO_BASE_IMAGE}
+
+LABEL org.opencontainers.image.title="Spilo for PolarDB-PG" \
+      org.opencontainers.image.description="PolarDB-PG 2.0.16.17.0 on the Spilo PostgreSQL 16 runtime" \
+      com.apecloud.polardb-pg.rpm-version="2.0.16.17.0-20260519173021.al8"
+
+COPY --from=polardb-extractor /polardb-rootfs/u01/polardb_pg_16 /u01/polardb_pg_16
+COPY scripts/configure_polardb_spilo.py /scripts/configure_polardb_spilo.py
+
+RUN --network=none mv /scripts/configure_spilo.py /scripts/configure_spilo_base.py \
+    && ln -s configure_polardb_spilo.py /scripts/configure_spilo.py \
+    && chmod 0755 /scripts/configure_polardb_spilo.py \
+    && rm -rf /usr/lib/postgresql/16/bin \
+    && ln -s /u01/polardb_pg_16/bin /usr/lib/postgresql/16/bin \
+    && test "$(readlink /u01/polardb_pg_16/bin/pg_basebackup)" = polar_basebackup
+
+ENV PGVERSION=16 \
+    POLARDB_COMPATIBILITY_MODE=pg \
+    LD_LIBRARY_PATH=/u01/polardb_pg_16/lib \
+    PATH=/u01/polardb_pg_16/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib/postgresql/16/bin
+
+RUN --network=none postgres --version \
+    && test "$(readlink -f /usr/lib/postgresql/16/bin/postgres)" = /u01/polardb_pg_16/bin/postgres \
+    && test "$(readlink -f /usr/lib/postgresql/16/bin/pg_basebackup)" = /u01/polardb_pg_16/bin/polar_basebackup

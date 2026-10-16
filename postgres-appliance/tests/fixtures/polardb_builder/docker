@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+calls_file=${POLARDB_MOCK_DOCKER_CALLS:?}
+build_args_file=${POLARDB_MOCK_BUILD_ARGS:?}
+scenario=${POLARDB_MOCK_BUILDER_SCENARIO:-local}
+
+printf '%s' "$1" >>"${calls_file}"
+for argument in "${@:2}"; do
+    printf ' %s' "${argument}" >>"${calls_file}"
+done
+printf '\n' >>"${calls_file}"
+
+case "${1:-} ${2:-}" in
+    'buildx inspect')
+        case "${scenario}" in
+            local)
+                cat <<'EOF'
+Name: polardb-local
+Driver: docker-container
+Endpoint: local-context
+Platforms: linux/amd64*, linux/arm64*
+EOF
+                ;;
+            remote)
+                cat <<'EOF'
+Name: polardb-remote
+Driver: docker-container
+Endpoint: remote-context
+Platforms: linux/amd64*, linux/arm64*
+EOF
+                ;;
+            mixed)
+                cat <<'EOF'
+Name: polardb-mixed
+Driver: docker-container
+Endpoint: local-context
+Platforms: linux/amd64*, linux/arm64*
+Endpoint: remote-context
+Platforms: linux/amd64*, linux/arm64*
+EOF
+                ;;
+            amd64-only)
+                cat <<'EOF'
+Name: polardb-amd64
+Driver: docker-container
+Endpoint: local-context
+Platforms: linux/amd64*
+EOF
+                ;;
+            docker-driver)
+                cat <<'EOF'
+Name: shared-engine
+Driver: docker
+Endpoint: local-context
+Platforms: linux/amd64*, linux/arm64*
+EOF
+                ;;
+            *)
+                echo "unknown mock builder scenario: ${scenario}" >&2
+                exit 90
+                ;;
+        esac
+        ;;
+    'context inspect')
+        case "${3:-}" in
+            local-context) printf '%s\n' 'unix:///var/run/docker.sock' ;;
+            remote-context) printf '%s\n' 'tcp://builder.example.invalid:2376' ;;
+            *) exit 91 ;;
+        esac
+        ;;
+    'buildx build')
+        printf '%s\n' "${@:3}" >"${build_args_file}"
+        [[ "${POLARDB_MOCK_BUILD_MODE:-success}" == success ]] || exit 94
+        ;;
+    'buildx prune')
+        [[ "${POLARDB_MOCK_PRUNE_MODE:-success}" == success ]] || exit 95
+        ;;
+    *)
+        echo "unexpected mock docker invocation: $*" >&2
+        exit 92
+        ;;
+esac

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+path=${1:?}
+case "${path##*/}" in
+    PolarDB-2.0.14.41.0-20260421202048.alios7.x86_64.rpm)
+        digest=c7ba1f7470d5ac946d8a5029081b930c5b379358cd65a2bf843a021e405df553
+        ;;
+    PolarDB-2.0.14.41.0-20260421202048.alios7.aarch64.rpm)
+        digest=51dee31bd859086c465dec532e616061c83950b3f2626c69a075fbcd85f01622
+        ;;
+    PolarDB16-2.0.16.17.0-20260519173021.al8.x86_64.rpm)
+        digest=afa962176695179bf20641364c78c2536451d2d4046c7e8bbcb222fb49097a35
+        ;;
+    PolarDB16-2.0.16.17.0-20260519173021.al8.aarch64.rpm)
+        digest=c05a10970eacb0ffa98c2e09868d2561ac4efd5c5471c362eba36f7a80702b04
+        ;;
+    *)
+        echo "unexpected RPM fixture: ${path}" >&2
+        exit 93
+        ;;
+esac
+printf '%s  %s\n' "${digest}" "${path}"
