@@ -453,7 +453,8 @@ def get_provider():
 
 def get_instance_metadata(provider):
     pod_ip = os.environ.get('POD_IP') if USE_KUBERNETES else None
-    metadata = {'ip': pod_ip or socket.getaddrinfo(socket.gethostname(), 0, socket.AF_UNSPEC, socket.SOCK_STREAM, 0)[0][4][0],
+    metadata = {'ip': pod_ip or socket.getaddrinfo(
+                    socket.gethostname(), 0, socket.AF_UNSPEC, socket.SOCK_STREAM, 0)[0][4][0],
                 'id': socket.gethostname(),
                 'zone': 'local'}
 
