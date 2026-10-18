@@ -22,8 +22,8 @@ fi
 ulimit -c unlimited || true
 
 # Only small subset of environment variables is allowed. We don't want accidentally disclose sensitive information
-# NOTE(KubeBlocks): add POST_INIT_EXEC_DIR
-for E in $(printenv -0 | tr '\n' ' ' | sed 's/\x00/\n/g' | grep -vE '^(KUBERNETES_(SERVICE|PORT|ROLE)[_=]|((POD_(IP|NAMESPACE))|HOSTNAME|PATH|PGHOME|LC_ALL|ENABLE_PG_MON|POST_INIT_EXEC_DIR)=)' | sed 's/=.*//g'); do
+# NOTE(KubeBlocks): retain PostgreSQL hooks and HostNetwork/License metadata
+for E in $(printenv -0 | tr '\n' ' ' | sed 's/\x00/\n/g' | grep -vE '^(KUBERNETES_(SERVICE|PORT|ROLE)[_=]|((POD_(IP|NAMESPACE))|HOSTNAME|PATH|PGHOME|LC_ALL|ENABLE_PG_MON|POST_INIT_EXEC_DIR|NODE_NAME|PATRONI_NAME|POSTGRES_HOST_NETWORK_PORT|POLARDB_LICENSE_REQUIRED)=)' | sed 's/=.*//g'); do
     unset $E
 done
 
