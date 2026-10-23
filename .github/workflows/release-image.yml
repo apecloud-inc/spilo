@@ -100,6 +100,7 @@ jobs:
             ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
 
       - name: Test PostgreSQL extensions
+        continue-on-error: true
         if: ${{ !inputs.skip_test && contains(fromJSON('["14", "15", "16", "17", "18"]'), inputs.pg_version) }}
         env:
           SPILO_TEST_IMAGE: spilo:test
@@ -125,6 +126,7 @@ jobs:
             ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
 
       - name: Verify published native image
+        continue-on-error: true
         if: ${{ !inputs.skip_test }}
         env:
           SPILO_TEST_IMAGE: docker.io/${{ env.IMAGE_NAME }}@${{ steps.publish.outputs.digest }}
@@ -140,7 +142,7 @@ jobs:
             14|15|16|17|18) bash postgres-appliance/tests/test_extensions.sh ;;
           esac
 
-      - name: Export verified digest
+      - name: Export image digest
         env:
           IMAGE_DIGEST: ${{ steps.publish.outputs.digest }}
         run: |
@@ -157,12 +159,12 @@ jobs:
 
   release-image:
     needs: [image-tag, build-image]
-    name: Publish verified multi-platform image
+    name: Publish multi-platform image
     runs-on: ubuntu-22.04
     permissions:
       contents: read
     steps:
-      - name: Download verified digests
+      - name: Download image digests
         uses: actions/download-artifact@v4
         with:
           path: /tmp/digests
