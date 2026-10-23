@@ -26,7 +26,11 @@ jobs:
     - name: Run flake8
       run: find postgres-appliance -name '*.py' -print0 | xargs -0 python -m flake8
     - name: Build spilo docker image
-      run: cd postgres-appliance && docker build -t spilo .
+      run: cd postgres-appliance && docker build --build-arg ADDITIONAL_LOCALES=zh_CN -t spilo .
+    - name: Test Chinese locale
+      run: docker run --rm --entrypoint locale spilo -a | grep -Fx zh_CN.utf8
+    - name: Test PostgreSQL extensions
+      run: bash postgres-appliance/tests/test_extensions.sh
     - name: Test spilo docker image
       run: bash postgres-appliance/tests/test_spilo.sh
     - name: Test USE_OLD_LOCALES

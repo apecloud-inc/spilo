@@ -53,6 +53,8 @@ jobs:
   release-image:
     needs: image-tag
     name: Build and Push Docker Image
+    outputs:
+      image-digest: ${{ steps.publish.outputs.digest }}
     runs-on: ubuntu-22.04
     permissions:
       contents: 'read'
@@ -65,7 +67,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up packages
-        run: sudo apt-get install -y shellcheck docker-compose
+        run: sudo apt-get install -y shellcheck docker-compose skopeo
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -106,8 +108,14 @@ jobs:
           tags: ${{ steps.image.outputs.DOCKER_NAME }}
           build-args: |
             PGVERSION=${{ inputs.pg_version }}
-            PGOLDVERSIONS=${{ inputs.pg_old_versions }}
+            PGOLDVERSIONS=
             ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
+
+      - name: Test PostgreSQL extensions
+        if: ${{ !inputs.skip_test && contains(fromJSON('["14", "15", "16", "17", "18"]'), inputs.pg_version) }}
+        env:
+          SPILO_TEST_IMAGE: "${{ steps.image.outputs.DOCKER_NAME }}"
+        run: bash postgres-appliance/tests/test_extensions.sh
 
       - name: Test spilo docker image
         if: ${{ !inputs.skip_test }}
@@ -118,6 +126,7 @@ jobs:
           bash postgres-appliance/tests/test_spilo.sh
 
       - name: Build and push multi-arch image to Docker Hub
+        id: publish
         uses: docker/build-push-action@v6
         with:
           context: "postgres-appliance/"
@@ -129,10 +138,61 @@ jobs:
             PGOLDVERSIONS=
             ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
 
-      - name: Copy image to Aliyun registry using skopeo
-        uses: coscene-io/skopeo-copy-action@v1.0.0
+      - name: Verify published amd64 image
+        if: ${{ !inputs.skip_test }}
+        env:
+          SPILO_TEST_IMAGE: docker.io/${{ env.IMAGE_NAME }}@${{ steps.publish.outputs.digest }}
+          ADDITIONAL_LOCALES: ${{ inputs.additional_locales || 'zh_CN' }}
+          PG_VERSION: ${{ inputs.pg_version }}
+        run: |
+          docker pull --platform linux/amd64 "$SPILO_TEST_IMAGE"
+          if [[ " $ADDITIONAL_LOCALES " == *" zh_CN "* ]]; then
+            docker run --rm --platform linux/amd64 --entrypoint locale "$SPILO_TEST_IMAGE" -a | grep -Fx zh_CN.utf8
+          fi
+          case "$PG_VERSION" in
+            14|15|16|17|18) bash postgres-appliance/tests/test_extensions.sh ;;
+          esac
+
+      - name: Copy all image platforms to Aliyun
+        env:
+          SOURCE_DIGEST: ${{ steps.publish.outputs.digest }}
+          ALIYUN_IMAGE: ${{ steps.image.outputs.ALIYUN_NAME }}
+        run: |
+          skopeo copy --all --preserve-digests \
+            --src-creds "$DOCKER_USER:$DOCKER_PASSWORD" \
+            --dest-creds "$ALIYUN_USER:$ALIYUN_PASSWORD" \
+            "docker://docker.io/$IMAGE_NAME@$SOURCE_DIGEST" "docker://$ALIYUN_IMAGE"
+
+  verify-arm64:
+    name: Verify published arm64 image
+    needs: release-image
+    if: ${{ !inputs.skip_test }}
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    env:
+      IMAGE_DIGEST: ${{ needs.release-image.outputs.image-digest }}
+      ADDITIONAL_LOCALES: ${{ inputs.additional_locales || 'zh_CN' }}
+      PG_VERSION: ${{ inputs.pg_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          src-creds: ${{ env.DOCKER_USER }}:${{ env.DOCKER_PASSWORD }}
-          src-image: ${{ steps.image.outputs.DOCKER_NAME }}
-          dst-creds: ${{ env.ALIYUN_USER }}:${{ env.ALIYUN_PASSWORD }}
-          dst-image: ${{ steps.image.outputs.ALIYUN_NAME }}
+          registry: docker.io
+          username: ${{ env.DOCKER_USER }}
+          password: ${{ env.DOCKER_PASSWORD }}
+
+      - name: Verify locale and PostgreSQL extensions
+        shell: bash
+        run: |
+          export SPILO_TEST_IMAGE="docker.io/$IMAGE_NAME@$IMAGE_DIGEST"
+          docker pull --platform linux/arm64 "$SPILO_TEST_IMAGE"
+          if [[ " $ADDITIONAL_LOCALES " == *" zh_CN "* ]]; then
+            docker run --rm --platform linux/arm64 --entrypoint locale "$SPILO_TEST_IMAGE" -a | grep -Fx zh_CN.utf8
+          fi
+          case "$PG_VERSION" in
+            14|15|16|17|18) bash postgres-appliance/tests/test_extensions.sh ;;
+          esac
