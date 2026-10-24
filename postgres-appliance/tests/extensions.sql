@@ -1,13 +1,17 @@
 CREATE EXTENSION vector;
+SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';
 CREATE TABLE vectors (id integer PRIMARY KEY, value vector(3));
 INSERT INTO vectors VALUES (1, '[1,0,0]'), (2, '[0,1,0]'), (3, '[0,0,1]');
 CREATE INDEX ON vectors USING hnsw (value vector_l2_ops);
 SET enable_seqscan = off;
 DO $$
 BEGIN
-    ASSERT (SELECT extversion = '0.8.7' FROM pg_extension WHERE extname = 'vector');
-    ASSERT (SELECT path IS NOT NULL FROM pg_extension_update_paths('vector')
-            WHERE source = '0.8.0' AND target = '0.8.7');
+    ASSERT EXISTS (SELECT 1 FROM pg_available_extensions
+                   WHERE name = 'vector' AND installed_version = default_version);
+    ASSERT EXISTS (SELECT 1 FROM pg_extension_update_paths('vector')
+                   WHERE source = '0.8.0'
+                     AND target = (SELECT extversion FROM pg_extension WHERE extname = 'vector')
+                     AND path IS NOT NULL);
     ASSERT (SELECT id FROM vectors ORDER BY value <-> '[1,0,0]' LIMIT 1) = 1;
 END;
 $$;

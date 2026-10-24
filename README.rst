@@ -56,6 +56,10 @@ selection, not which majors are installed. Invalid, mismatched or duplicate pins
 fail before package installation; unavailable releases fail the build. Direct
 Docker builds can omit the pin, but release workflow builds cannot.
 
+pgvector is installed from the configured package repositories without a version
+pin. Its version can change between builds; extension tests report the installed
+version and check indexing and the packaged upgrade path.
+
 Run the image locally after build:
 
     $ docker run -it your-spilo-image:$YOUR_TAG

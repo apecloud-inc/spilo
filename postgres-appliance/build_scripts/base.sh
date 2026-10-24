@@ -105,13 +105,8 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
                 "postgresql-${version}-wal2json"
                 "postgresql-${version}-decoderbufs"
                 "postgresql-${version}-pllua"
+                "postgresql-${version}-pgvector"
                 "postgresql-${version}-roaringbitmap")
-
-        if [ -n "$PGVECTOR_VERSION" ] && [ "$version" -ge 14 ] && [ "$version" -le 18 ]; then
-            EXTRAS+=("postgresql-${version}-pgvector=${PGVECTOR_VERSION}-*")
-        else
-            EXTRAS+=("postgresql-${version}-pgvector")
-        fi
 
         for pkg in pgfaceting age; do
             if [ "$(apt-cache search --names-only "^postgresql-${version}-${pkg}$" | wc -l)" -eq 1 ]; then
