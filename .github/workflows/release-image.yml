@@ -100,7 +100,6 @@ jobs:
             ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
 
       - name: Test PostgreSQL extensions
-        continue-on-error: true
         if: ${{ !inputs.skip_test && contains(fromJSON('["14", "15", "16", "17", "18"]'), inputs.pg_version) }}
         env:
           SPILO_TEST_IMAGE: spilo:test
@@ -126,7 +125,6 @@ jobs:
             ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
 
       - name: Verify published native image
-        continue-on-error: true
         if: ${{ !inputs.skip_test }}
         env:
           SPILO_TEST_IMAGE: docker.io/${{ env.IMAGE_NAME }}@${{ steps.publish.outputs.digest }}
@@ -159,7 +157,7 @@ jobs:
 
   release-image:
     needs: [image-tag, build-image]
-    name: Publish multi-platform image
+    name: Publish verified multi-platform image
     runs-on: ubuntu-24.04
     permissions:
       contents: read
