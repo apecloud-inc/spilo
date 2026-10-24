@@ -21,10 +21,12 @@ trap cleanup QUIT TERM EXIT
 ```
 
 For the PostgreSQL 14–18 extension image, run `SPILO_TEST_IMAGE=<image> bash test_extensions.sh`.
-This starts an isolated database for each installed major, checks the pinned server and zhparser versions, logs the installed vector version,
+This starts an isolated database for each installed major, preloads bg_mon, checks the pinned server, pg_profile and zhparser versions, logs the installed vector version,
 checks it matches the package default and has an update path from vector 0.8.0, and exercises HNSW, IVFFlat and Chinese
 full-text indexing, checks that an ordinary role cannot write a server dictionary, and decodes
 logical changes through pgoutput using the server's default output-plugin allowlist.
+On PostgreSQL 17 and 18 it also preloads pg_textsearch 1.3.1 and checks BM25 index creation and ranked queries; older majors must not include it.
+The runner checks the opt-in configuration and version gates before starting databases.
 The test does not exercise upgrades of existing databases, Patroni replication or backup/restore of custom dictionaries.
 
 Run `bash test_build_versions.sh` without Docker to check version argument validation.

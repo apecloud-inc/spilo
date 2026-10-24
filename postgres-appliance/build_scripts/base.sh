@@ -37,6 +37,7 @@ else
 
     # prepare 3rd sources
     git clone -b "$PLPROFILER" https://github.com/bigsql/plprofiler.git
+    git clone -b "$PG_TEXTSEARCH" https://github.com/timescale/pg_textsearch.git
     curl -sL "https://github.com/zalando-pg/pg_mon/archive/$PG_MON_COMMIT.tar.gz" | tar xz
 
     for p in python3-keyring python3-docutils ieee-data; do
@@ -203,6 +204,9 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
     EXTRA_EXTENSIONS=()
     if [ "$DEMO" != "true" ]; then
         EXTRA_EXTENSIONS+=("plprofiler" "pg_mon-${PG_MON_COMMIT}")
+        if [ "$version" -ge 17 ] && [ "$version" -le 18 ]; then
+            EXTRA_EXTENSIONS+=("pg_textsearch")
+        fi
         if [ -n "$ZHPARSER_COMMIT" ] && [ "$version" -ge 14 ] && [ "$version" -le 18 ]; then
             if [ ! -d "scws-${SCWS_VERSION}" ]; then
                 curl -fL "https://www.xunsearch.com/scws/down/scws-${SCWS_VERSION}.tar.bz2" -o scws.tar.bz2

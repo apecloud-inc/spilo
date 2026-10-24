@@ -1,3 +1,10 @@
+CREATE EXTENSION pg_profile CASCADE;
+DO $$
+BEGIN
+    ASSERT (SELECT extversion = '4.15' FROM pg_extension WHERE extname = 'pg_profile');
+END;
+$$;
+
 CREATE EXTENSION vector;
 SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';
 CREATE TABLE vectors (id integer PRIMARY KEY, value vector(3));
@@ -72,3 +79,28 @@ END;
 $$;
 SELECT pg_drop_replication_slot('extension_smoke');
 DROP PUBLICATION extension_smoke;
+
+SELECT current_setting('server_version_num')::int BETWEEN 170000 AND 189999 AS supports_pg_textsearch \gset
+\if :supports_pg_textsearch
+CREATE EXTENSION pg_textsearch;
+CREATE TABLE ranked_documents (id integer PRIMARY KEY, content text);
+INSERT INTO ranked_documents VALUES
+    (1, 'PostgreSQL is a powerful database system'),
+    (2, 'BM25 is a ranking function'),
+    (3, 'Fresh apples and oranges');
+CREATE INDEX ranked_documents_bm25 ON ranked_documents USING bm25(content) WITH (text_config='english');
+DO $$
+BEGIN
+    ASSERT (SELECT extversion = '1.3.1' FROM pg_extension WHERE extname = 'pg_textsearch');
+    ASSERT (SELECT id FROM ranked_documents ORDER BY content <@> 'database system' LIMIT 1) = 1;
+    ASSERT (SELECT content <@> to_bm25query('database system', 'ranked_documents_bm25')
+            FROM ranked_documents WHERE id = 1) < 0;
+END;
+$$;
+\else
+DO $$
+BEGIN
+    ASSERT NOT EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'pg_textsearch');
+END;
+$$;
+\endif

@@ -60,6 +60,13 @@ pgvector is installed from the configured package repositories without a version
 pin. Its version can change between builds; extension tests report the installed
 version and check indexing and the packaged upgrade path.
 
+Non-DEMO builds include pg_textsearch 1.3.1 for PostgreSQL 17 and 18. Set
+``ENABLE_PG_TEXTSEARCH=true`` to enable it in Spilo's generated configuration.
+With an explicit ``shared_preload_libraries`` setting (including KubeBlocks
+parameter configuration), append ``pg_textsearch`` to the existing list and
+restart PostgreSQL. Then run ``CREATE EXTENSION pg_textsearch;`` as a superuser
+in each target database. PostgreSQL 14–16 do not include this extension.
+
 Run the image locally after build:
 
     $ docker run -it your-spilo-image:$YOUR_TAG
