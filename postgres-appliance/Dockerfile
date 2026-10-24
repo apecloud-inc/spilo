@@ -39,7 +39,7 @@ RUN bash /builddeps/prepare.sh
 COPY --from=ubuntu-18 /usr/lib/locale/locale-archive /usr/lib/locale/locale-archive.18
 
 COPY cron_unprivileged.c /builddeps/
-COPY build_scripts/base.sh /builddeps/
+COPY build_scripts/base.sh build_scripts/validate_pg_versions.sh /builddeps/
 COPY --from=dependencies-builder /builddeps/*.deb /builddeps/
 
 ARG PGVERSION
@@ -47,20 +47,23 @@ ARG TIMESCALEDB_APACHE_ONLY=true
 ARG TIMESCALEDB_TOOLKIT=true
 ARG COMPRESS
 ARG PGOLDVERSIONS=""
+ARG POSTGRESQL_VERSIONS=""
 ARG WITH_PERL=false
 
 ARG DEB_PG_SUPPORTED_VERSIONS="$PGOLDVERSIONS $PGVERSION"
 
 # Install PostgreSQL, extensions and contribs
-ENV POSTGIS_VERSION=3.6 \
-    BG_MON_COMMIT=a73c6bcd10dfdf9feaf5eabab7eb6b12d167680d \
+ENV POSTGRESQL_VERSIONS=$POSTGRESQL_VERSIONS \
+    ZHPARSER_COMMIT=2e995c4df672563992b4d7a147b8fa2d0d4cda6c \
+    SCWS_VERSION=1.2.3 \
+    POSTGIS_VERSION=3.6 \
+    BG_MON_COMMIT=c44fa1dd0cd5346e462c54dfd2f97d3f25c299d6 \
     PG_AUTH_MON_COMMIT=fe099eef7662cbc85b0b79191f47f52f1e96b779 \
     PG_MON_COMMIT=88ac7b58348aa061c814982defc170644f368f39 \
-    SET_USER=REL4_1_0 \
     PLPROFILER=REL4_2_5 \
-    PG_PROFILE=4.11 \
+    PG_PROFILE=4.15 \
     PAM_OAUTH2=v1.0.1 \
-    PG_PERMISSIONS_COMMIT=f4b7c18676fa64236a1c8e28d34a35764e4a70e2
+    PG_TEXTSEARCH=v1.3.1
 
 WORKDIR /builddeps
 RUN bash base.sh
@@ -71,7 +74,7 @@ COPY --from=dependencies-builder /builddeps/wal-g /usr/local/bin/
 COPY build_scripts/patroni.sh build_scripts/compress_build.sh /builddeps/
 
 # Install patroni
-ENV PATRONIVERSION=4.1.0
+ENV PATRONIVERSION=4.1.5
 
 WORKDIR /
 

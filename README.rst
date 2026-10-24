@@ -35,12 +35,37 @@ How to Build This Docker Image
 There are a few build arguments defined in the Dockerfile and it is possible to change them by specifying ``--build-arg`` arguments:
 
 - WITH_PERL=false # set to true if you want to install perl and plperl packages into image
-- PGVERSION="12"
-- PGOLDVERSIONS="9.5 9.6 10 11"
+- PGVERSION="18" # target PostgreSQL major version
+- PGOLDVERSIONS="" # empty by default; only explicitly listed additional majors are installed
+- POSTGRESQL_VERSIONS="" # optional exact major.minor pins for selected majors; empty uses available repository versions
 - DEMO=false # set to true to build the smallest possible image which will work only on Kubernetes
 - TIMESCALEDB_APACHE_ONLY=true # set to false to build timescaledb community version (Timescale License)
 - TIMESCALEDB_TOOLKIT=true # set to false to skip installing toolkit with timescaledb community edition. Only relevant when TIMESCALEDB_APACHE_ONLY=false
 - ADDITIONAL_LOCALES= # additional UTF-8 locales to build into image (example: "de_DE pl_PL fr_FR")
+
+From the repository root, build a single-major image with an explicit minor release::
+
+    docker build postgres-appliance --tag spilo:18.6 \
+      --build-arg PGVERSION=18 --build-arg PGOLDVERSIONS= \
+      --build-arg POSTGRESQL_VERSIONS=18.6 --build-arg ADDITIONAL_LOCALES=zh_CN
+
+The ``RELEASE-IMAGE`` workflow requires ``pg_version`` (for example ``18``) and
+``pg_minor_version`` (for example ``18.6``). Both the test build and the published
+build use this exact pin, with ``PGOLDVERSIONS`` empty. The pin controls package
+selection, not which majors are installed. Invalid, mismatched or duplicate pins
+fail before package installation; unavailable releases fail the build. Direct
+Docker builds can omit the pin, but release workflow builds cannot.
+
+pgvector is installed from the configured package repositories without a version
+pin. Its version can change between builds; extension tests report the installed
+version and check indexing and the packaged upgrade path.
+
+Non-DEMO builds include pg_textsearch 1.3.1 for PostgreSQL 17 and 18. Set
+``ENABLE_PG_TEXTSEARCH=true`` to enable it in Spilo's generated configuration.
+With an explicit ``shared_preload_libraries`` setting (including KubeBlocks
+parameter configuration), append ``pg_textsearch`` to the existing list and
+restart PostgreSQL. Then run ``CREATE EXTENSION pg_textsearch;`` as a superuser
+in each target database. PostgreSQL 14–16 do not include this extension.
 
 Run the image locally after build:
 
