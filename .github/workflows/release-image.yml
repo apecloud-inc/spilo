@@ -8,7 +8,10 @@ on:
         required: true
         default: ''
       pg_version:
-        description: 'The version of postgres'
+        description: 'PostgreSQL major version (e.g. 18)'
+        required: true
+      pg_minor_version:
+        description: 'Exact PostgreSQL release matching pg_version (e.g. 18.6)'
         required: true
       skip_test:
         description: 'Skip testing the docker image'
@@ -32,7 +35,7 @@ env:
   ALIYUN_USER: ${{ secrets.ALIYUN_REGISTRY_USER }}
   ALIYUN_PASSWORD: ${{ secrets.ALIYUN_REGISTRY_PASSWORD }}
 
-run-name: release image_tag:${{ inputs.image_tag }} pg_version:${{ inputs.pg_version }} locales:${{ inputs.additional_locales }} skip_test:${{ inputs.skip_test }}
+run-name: release image_tag:${{ inputs.image_tag }} pg_version:${{ inputs.pg_version }} pg_minor_version:${{ inputs.pg_minor_version }} locales:${{ inputs.additional_locales }} skip_test:${{ inputs.skip_test }}
 
 jobs:
   image-tag:
@@ -40,15 +43,19 @@ jobs:
     outputs:
       tag-name: ${{ steps.get_tag_name.outputs.tag_name }}
     steps:
-      - name: Get Tag Name
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate versions and get tag name
         id: get_tag_name
+        env:
+          PGVERSION: ${{ inputs.pg_version }}
+          POSTGRESQL_VERSIONS: ${{ inputs.pg_minor_version }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
-          TAG_NAME=${{ inputs.image_tag }}
-          #if [ -z "$TAG_NAME" ]; then
-          #    TAG_NAME=${{ env.RELEASE_VERSION }}
-          #fi
-          #TAG_NAME="${TAG_NAME/v/}"
-          echo tag_name=$TAG_NAME >> $GITHUB_OUTPUT
+          [[ "$POSTGRESQL_VERSIONS" =~ ^[0-9]+\.[0-9]+$ ]]
+          bash postgres-appliance/build_scripts/validate_pg_versions.sh
+          echo "tag_name=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
 
   build-image:
     needs: image-tag
@@ -96,6 +103,7 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           build-args: |
             PGVERSION=${{ inputs.pg_version }}
+            POSTGRESQL_VERSIONS=${{ inputs.pg_minor_version }}
             PGOLDVERSIONS=
             ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
 
@@ -121,6 +129,7 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           build-args: |
             PGVERSION=${{ inputs.pg_version }}
+            POSTGRESQL_VERSIONS=${{ inputs.pg_minor_version }}
             PGOLDVERSIONS=
             ADDITIONAL_LOCALES=${{ inputs.additional_locales || 'zh_CN' }}
 

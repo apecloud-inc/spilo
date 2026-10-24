@@ -39,7 +39,7 @@ RUN bash /builddeps/prepare.sh
 COPY --from=ubuntu-18 /usr/lib/locale/locale-archive /usr/lib/locale/locale-archive.18
 
 COPY cron_unprivileged.c /builddeps/
-COPY build_scripts/base.sh /builddeps/
+COPY build_scripts/base.sh build_scripts/validate_pg_versions.sh /builddeps/
 COPY --from=dependencies-builder /builddeps/*.deb /builddeps/
 
 ARG PGVERSION
@@ -47,12 +47,13 @@ ARG TIMESCALEDB_APACHE_ONLY=true
 ARG TIMESCALEDB_TOOLKIT=true
 ARG COMPRESS
 ARG PGOLDVERSIONS=""
+ARG POSTGRESQL_VERSIONS=""
 ARG WITH_PERL=false
 
 ARG DEB_PG_SUPPORTED_VERSIONS="$PGOLDVERSIONS $PGVERSION"
 
 # Install PostgreSQL, extensions and contribs
-ENV POSTGRESQL_VERSIONS="14.24 15.19 16.15 17.11 18.6" \
+ENV POSTGRESQL_VERSIONS=$POSTGRESQL_VERSIONS \
     PGVECTOR_VERSION=0.8.7 \
     ZHPARSER_COMMIT=2e995c4df672563992b4d7a147b8fa2d0d4cda6c \
     SCWS_VERSION=1.2.3 \

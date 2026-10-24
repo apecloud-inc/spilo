@@ -9,6 +9,7 @@ MAKEFLAGS="-j $(grep -c ^processor /proc/cpuinfo)"
 export MAKEFLAGS
 
 set -ex
+bash "$(dirname "$0")/validate_pg_versions.sh"
 sed -i 's/^#\s*\(deb.*universe\)$/\1/g' /etc/apt/sources.list
 
 apt-get update
