@@ -29,6 +29,7 @@ Environment Configuration Settings
 - **PGPASSWORD_SUPERUSER**: a password for the superuser, 'zalando' by default
 - **ALLOW_NOSSL**: set to allow clients to connect without SSL enabled.
 - **PGPORT**: port PostgreSQL listens to for client connections, 5432 by default
+- **ENABLE_PG_TEXTSEARCH**: set to ``true`` to add pg_textsearch to the generated shared preload and extension allowlists on PostgreSQL 17 and 18. Disabled by default; explicit parameter configuration takes precedence. Requires a server restart.
 - **PGVERSION**: Specifies the version of postgreSQL to reference in the bin_dir variable (/usr/lib/postgresql/PGVERSION/bin) if postgresql.bin_dir wasn't set in SPILO_CONFIGURATION
 - **SCOPE**: cluster name, multiple Spilos belonging to the same cluster must have identical scope.
 - **SSL_CA_FILE**: path to the SSL CA certificate file inside the container (by default: '')

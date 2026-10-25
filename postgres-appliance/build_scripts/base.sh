@@ -9,6 +9,7 @@ MAKEFLAGS="-j $(grep -c ^processor /proc/cpuinfo)"
 export MAKEFLAGS
 
 set -ex
+bash "$(dirname "$0")/validate_pg_versions.sh"
 sed -i 's/^#\s*\(deb.*universe\)$/\1/g' /etc/apt/sources.list
 
 apt-get update
@@ -36,6 +37,7 @@ else
 
     # prepare 3rd sources
     git clone -b "$PLPROFILER" https://github.com/bigsql/plprofiler.git
+    git clone -b "$PG_TEXTSEARCH" https://github.com/timescale/pg_textsearch.git
     curl -sL "https://github.com/zalando-pg/pg_mon/archive/$PG_MON_COMMIT.tar.gz" | tar xz
 
     for p in python3-keyring python3-docutils ieee-data; do
@@ -66,6 +68,18 @@ apt-get install -y \
 
 # forbid creation of a main cluster when package is installed
 sed -ri 's/#(create_main_cluster) .*$/\1 = false/' /etc/postgresql-common/createcluster.conf
+
+# Keep later meta-package installation from silently advancing a pinned server.
+for pg_release in $POSTGRESQL_VERSIONS; do
+    pg_major=${pg_release%%.*}
+    [[ " $DEB_PG_SUPPORTED_VERSIONS " == *" $pg_major "* ]] || continue
+    cat >> /etc/apt/preferences.d/spilo-postgresql <<EOF
+Package: postgresql-${pg_major} postgresql-client-${pg_major} postgresql-server-dev-${pg_major}
+Pin: version ${pg_release}-*
+Pin-Priority: 1001
+
+EOF
+done
 
 for version in $DEB_PG_SUPPORTED_VERSIONS; do
     sed -i "s/ main.*$/ main $version/g" /etc/apt/sources.list.d/pgdg.list
@@ -190,6 +204,22 @@ for version in $DEB_PG_SUPPORTED_VERSIONS; do
     EXTRA_EXTENSIONS=()
     if [ "$DEMO" != "true" ]; then
         EXTRA_EXTENSIONS+=("plprofiler" "pg_mon-${PG_MON_COMMIT}")
+        if [ "$version" -ge 17 ] && [ "$version" -le 18 ]; then
+            EXTRA_EXTENSIONS+=("pg_textsearch")
+        fi
+        if [ -n "$ZHPARSER_COMMIT" ] && [ "$version" -ge 14 ] && [ "$version" -le 18 ]; then
+            if [ ! -d "scws-${SCWS_VERSION}" ]; then
+                curl -fL "https://www.xunsearch.com/scws/down/scws-${SCWS_VERSION}.tar.bz2" -o scws.tar.bz2
+                echo "60d50ac3dc42cff3c0b16cb1cfee47d8cb8c8baa142a58bc62854477b81f1af5  scws.tar.bz2" | sha256sum -c -
+                tar -xjf scws.tar.bz2
+                (cd "scws-${SCWS_VERSION}" && ./configure && make && make install)
+                ldconfig
+                curl -fL "https://codeload.github.com/amutu/zhparser/tar.gz/${ZHPARSER_COMMIT}" -o zhparser.tar.gz
+                echo "ce5d5e21a1c1f8b3f466998fba0efe51928aad6e12026b5e30ecd2afbfa3285e  zhparser.tar.gz" | sha256sum -c -
+                tar -xzf zhparser.tar.gz
+            fi
+            EXTRA_EXTENSIONS+=("zhparser-${ZHPARSER_COMMIT}")
+        fi
     fi
 
     for n in bg_mon-${BG_MON_COMMIT} \
@@ -226,6 +256,15 @@ apt-get autoremove -y
 if [ "$WITH_PERL" != "true" ] || [ "$DEMO" != "true" ]; then
     dpkg -i ./*.deb || apt-get -y -f install
 fi
+
+# Verify the final package resolution before removing build dependencies.
+for pg_release in $POSTGRESQL_VERSIONS; do
+    pg_major=${pg_release%%.*}
+    [[ " $DEB_PG_SUPPORTED_VERSIONS " == *" $pg_major "* ]] || continue
+    if [ -x "/usr/lib/postgresql/${pg_major}/bin/postgres" ]; then
+        /usr/lib/postgresql/"$pg_major"/bin/postgres --version | grep -F " ${pg_release} "
+    fi
+done
 
 # Remove unnecessary packages
 apt-get purge -y \

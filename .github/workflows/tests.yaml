@@ -1,11 +1,7 @@
 name: Test Image
 
 on:
-  pull_request:
-  push:
-    branches:
-    - main
-    - trigger
+  workflow_dispatch:
 
 jobs:
   tests:
@@ -25,10 +21,15 @@ jobs:
       run: find postgres-appliance -name '*.sh' -print0 | xargs -0 shellcheck
     - name: Run flake8
       run: find postgres-appliance -name '*.py' -print0 | xargs -0 python -m flake8
+    - name: Test PostgreSQL build version arguments
+      run: bash postgres-appliance/tests/test_build_versions.sh
     - name: Build spilo docker image
-      run: cd postgres-appliance && docker build -t spilo .
+      run: cd postgres-appliance && docker build --build-arg PGVERSION=18 --build-arg POSTGRESQL_VERSIONS=18.6 --build-arg PGOLDVERSIONS= --build-arg ADDITIONAL_LOCALES=zh_CN -t spilo .
+    - name: Test Chinese locale
+      run: docker run --rm --entrypoint locale spilo -a | grep -Fx zh_CN.utf8
+    - name: Test PostgreSQL extensions
+      run: bash postgres-appliance/tests/test_extensions.sh
     - name: Test spilo docker image
       run: bash postgres-appliance/tests/test_spilo.sh
     - name: Test USE_OLD_LOCALES
       run: bash -x postgres-appliance/tests/locales_test/test_locales.sh
-      if: github.event_name == 'push'
