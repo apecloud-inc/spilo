@@ -49,6 +49,14 @@ From the repository root, build a single-major image with an explicit minor rele
       --build-arg PGVERSION=18 --build-arg PGOLDVERSIONS= \
       --build-arg POSTGRESQL_VERSIONS=18.6 --build-arg ADDITIONAL_LOCALES=zh_CN
 
+GitHub Actions workflows are manual-only. Use ``Test Image`` for standalone
+validation and ``RELEASE-IMAGE`` for native multi-platform validation and
+publication to Docker Hub and Alibaba Cloud Registry. Pushes, pull requests,
+GitHub releases and schedules do not trigger these workflows. GHCR publication
+and the upstream Kubernetes example installation workflow are not maintained.
+GitHub CodeQL default setup must remain disabled in repository settings because
+it can create automatic scans independently of the workflow files.
+
 The ``RELEASE-IMAGE`` workflow requires ``pg_version`` (for example ``18``) and
 ``pg_minor_version`` (for example ``18.6``). Both the test build and the published
 build use this exact pin, with ``PGOLDVERSIONS`` empty. The pin controls package
